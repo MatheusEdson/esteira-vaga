@@ -235,7 +235,7 @@ flowchart LR
 | `app/` | API FastAPI + Kanban das candidaturas | `uvicorn app.api.main:app` |
 | `tools/upwork/` | Pontuação de vaga e preenchimento de proposta | `python tools/upwork/pontuar.py <dataset>` |
 | `tools/redacao/` | Máscara de tela para gravar demo sem vazar cliente | cola no Console antes de gravar |
-| `tests/` | 48 testes: classificação, caminhos, armazenamento, pontuação | `python -m pytest tests/ -q` |
+| `tests/` | 56 testes: carga dos adaptadores, classificação, caminhos, armazenamento, estados, pontuação | `python -m pytest tests/ -q` |
 | `deploy/` | Docker, nginx, e a regra de agendamento | ver `deploy/crontab.example` |
 | `.githooks/` | Bloqueia credencial, CPF e telefone no commit | `git config core.hooksPath .githooks` |
 
