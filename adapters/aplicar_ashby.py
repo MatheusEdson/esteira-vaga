@@ -4,7 +4,7 @@
 
 Aborta sem enviar se achar pergunta obrigatoria sem resposta preparada.
 """
-import sys, os, json, re
+import sys, os, re
 import sys as _sys, os as _os
 _d = _os.path.dirname(_os.path.abspath(__file__))
 for _c in (_d, _os.path.dirname(_d)):
@@ -14,7 +14,7 @@ from nav import sync_playwright   # patchright endurecido, ver nav.py
 BASE = os.path.dirname(os.path.abspath(__file__))
 from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
 PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
+from core.perfil import curriculo as _cv, respostas_md as _resp
 ID = PERFIL["identidade"]
 
 if len(sys.argv) < 2:

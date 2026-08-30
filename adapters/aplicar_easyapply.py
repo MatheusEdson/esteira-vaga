@@ -7,7 +7,7 @@ Dry-run por padrao: abre o modal, percorre as etapas SEM enviar, imprime todos o
 campos e perguntas de cada etapa e tira screenshot. O envio real so acontece com
 --submit, e mesmo assim para se aparecer campo obrigatorio desconhecido.
 """
-import sys, os, json, re, unicodedata
+import sys, os, re, unicodedata
 import sys as _sys, os as _os
 _d = _os.path.dirname(_os.path.abspath(__file__))
 for _c in (_d, _os.path.dirname(_d)):
@@ -25,7 +25,7 @@ def sem_acento(s):
 BASE = os.path.dirname(os.path.abspath(__file__))
 from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
 PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
+from core.perfil import curriculo as _cv
 ID = PERFIL["identidade"]
 
 if len(sys.argv) < 2:

@@ -6,7 +6,7 @@ Particularidades: a cover letter e' UPLOAD de arquivo (nao textarea); o nivel de
 ingles e' um grupo de radios que compartilham o mesmo name, entao a selecao tem
 que ser pelo TEXTO do label; e ha 4 checkboxes de sim/nao.
 """
-import sys, os, json, re
+import sys, os, re
 import sys as _sys, os as _os
 _d = _os.path.dirname(_os.path.abspath(__file__))
 for _c in (_d, _os.path.dirname(_d)):
@@ -37,7 +37,7 @@ CARTA = _anexo("cover-letter-agent.pdf")
 URL = "https://jobs.ashbyhq.com/Agent/5d684cff-64ee-4ed7-bbbf-838c48b8ccd1/application"
 DO_SUBMIT = "--submit" in sys.argv
 
-MD = _resposta("respostas-agent-careers.md")
+MD = _resp("respostas-agent-careers.md")
 
 
 def bloco(titulo):

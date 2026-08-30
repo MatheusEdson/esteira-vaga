@@ -1,5 +1,5 @@
 # Esteira de candidaturas: roda 2x por semana pelo Agendador de Tarefas do Windows.
-# Chama o Claude Code em modo headless com o procedimento do ROTINA.md.
+# Chama o Claude Code em modo headless com o procedimento do docs\rotina.md.
 
 $base = "<raiz-do-repo>"
 $log  = Join-Path $base "_logs"
@@ -38,14 +38,14 @@ $prompt = @'
 Execute a rotina de candidaturas do dono do perfil.
 
 Leia primeiro, nesta ordem:
-  <raiz-do-repo>\ROTINA.md     (o procedimento passo a passo)
-  <raiz-do-repo>\perfil.json   (banco de respostas, filtros e o que NUNCA pode ser afirmado)
-  <raiz-do-repo>\enviadas.json (nao repetir vaga ja enviada ou marcada como NAO ENVIAR)
+  <raiz-do-repo>\docs\rotina.md     (o procedimento passo a passo)
+  <raiz-do-repo>\data\perfil.json   (banco de respostas, filtros e o que NUNCA pode ser afirmado)
+  <raiz-do-repo>\data\enviadas.json (nao repetir vaga ja enviada ou marcada como NAO ENVIAR)
 
-Siga o ROTINA.md a risca. Pontos inegociaveis:
+Siga o docs\rotina.md a risca. Pontos inegociaveis:
 - Auto-envio esta autorizado para vagas acima do corte de score.
 - NUNCA preencha campo obrigatorio com afirmacao que nao esteja no perfil.json. Se nao houver
-  resposta verdadeira, a vaga vai para <raiz-do-repo>\fila.md com a pergunta literal, e voce
+  resposta verdadeira, a vaga vai para <raiz-do-repo>\data\fila.md com a pergunta literal, e voce
   segue para a proxima. Nao invente experiencia.
 - Rode o adaptador em dry-run e confira o estado impresso ANTES de enviar.
 - Atualize enviadas.json a cada envio.
@@ -57,14 +57,14 @@ e-mail seu-email@exemplo.com.
 
 "=== esteira $stamp ===" | Out-File -FilePath $saida -Encoding utf8
 try {
-  # O MCP do Apify vive em D:\Projetos Prog\AIOS\aios-personal\.mcp.json, escopo de PROJETO.
+  # O MCP do Apify vive em <caminho do seu .mcp.json>, escopo de PROJETO.
   # Rodando com cwd nesta pasta, a sessao nunca carrega aquele arquivo e o passo 1 morre sem
   # scraper. mcp-esteira.json carrega SO o apify, explicitamente.
   # acceptEdits libera EDICAO, nao execucao nem rede. Sem allowedTools a esteira le o perfil
   # e nao consegue rodar adaptador, scraper nem abrir pagina de vaga. Escopo estreito de
   # proposito: python (os adaptadores Playwright) e as duas ferramentas de web. Nenhum outro
   # comando de shell, porque isto roda 2x por semana sem ninguem olhando.
-  & claude -p $prompt --add-dir $base --mcp-config "$base\mcp-esteira.json" `
+  & claude -p $prompt --add-dir $base --mcp-config "$base\deploy\mcp-esteira.json" `
       --allowedTools "Bash(python:*)" "WebFetch" "WebSearch" `
       --permission-mode acceptEdits *>&1 |
       Out-File -FilePath $saida -Append -Encoding utf8

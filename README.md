@@ -9,7 +9,7 @@ de ser "mandei uns currículos" e vira volume.
 | Parte | Problema | Solução |
 |---|---|---|
 | **Esteira de e-mail** | 2.100 mensagens em 45 dias, 91 relevantes | Busca por conteúdo, banco, alerta |
-| **Candidatura** | Cada ATS quebra de um jeito diferente | 16 adaptadores + Kanban com API |
+| **Candidatura** | Cada formulário quebra de um jeito diferente | 16 adaptadores + Kanban com API |
 | **Upwork** | Formulário que falha em silêncio, vaga que não paga | Navegador atrelado, pontuação, preenchimento |
 | **Redação de tela** | Print de portfólio vaza nome de cliente | Máscara ao vivo antes da captura |
 
@@ -24,10 +24,18 @@ Uma medição real, numa caixa de e-mail de quem estava procurando vaga:
 
 ```
 2.100 mensagens em 45 dias
-   67 encontradas filtrando por remetente de plataforma
-  212 encontradas filtrando por conteúdo
-  193 dessas eram INVISÍVEIS para o filtro de remetente
+   67 encontradas filtrando por REMETENTE de plataforma
+  212 encontradas filtrando por CONTEÚDO
+  193 dessas 212 eram invisíveis ao filtro de remetente
+   19 apareciam nos dois
+   48 só o filtro de remetente achava
 ```
+
+Os dois números importam. O filtro por conteúdo achou **193 que o outro perdia**, e o
+filtro por remetente ainda pegava **48 que o de conteúdo não pegava** — mensagem curta,
+sem frase reconhecível, que só se identifica pelo domínio de quem mandou. Por isso o
+código roda os dois em OR: `gmail_vagas.py` mantém uma lista de 37 domínios de ATS como
+segunda rede, e nenhum dos dois filtros é a resposta sozinho.
 
 Entre as invisíveis: uma **carta proposta assinada**, um **convite de entrevista em vídeo
 com prazo vencendo**, e um **"final reminder"** de uma vaga. Todos na caixa. Nenhum visto.
@@ -148,6 +156,14 @@ sequenceDiagram
 proposta ruim gasta Connects, queima a vaga e fica no historico do cliente. O ganho de
 automatizar o clique nao paga esse risco.
 
+**Dois modos de navegação, e o motivo de existirem os dois.** `nav.abrir()` levanta uma
+sessão persistente endurecida, para Upwork e LinkedIn, onde a detecção decide se você
+entra. Formulário de ATS não desafia ninguém, e ali um `launch()` simples basta: sessão
+persistente é cara e não compra nada. O que vale nos dois casos é `chromium_sandbox=True`,
+e por isso ele é aplicado no `sync_playwright` que o `nav.py` reexporta, e não só dentro
+de `abrir()`. O padrão do Playwright é `False`, o que injeta `--no-sandbox` e faz o
+Chromium mostrar a tarja de sinalizador sem suporte, visível a olho nu.
+
 **Por que o navegador e' aberto por uma pessoa.** Todo caminho em que a automacao lancava o
 browser terminou em loop infinito de desafio da Cloudflare, mesmo com fork endurecido,
 sandbox ligado e perfil envelhecido. O mesmo IP, na mesma conta, no mesmo minuto, passou de
@@ -211,7 +227,8 @@ flowchart LR
 | Pasta | O que é | Como se roda |
 |---|---|---|
 | `tools/esteira/` | Leitura de e-mail, classificação, alerta | `python tools/esteira/esteira.py cron` |
-| `adapters/` | Um script por ATS. 16 deles | `python adapters/aplicar_<ats>.py` (sem `--submit` é dry-run) |
+| `adapters/` | 16 scripts: 6 por ATS, 10 por empresa | `python adapters/aplicar_<ats>.py` (sem `--submit` é dry-run) |
+| `nav.py` | Camada de navegação: sessão endurecida e o sandbox padrão | importado por todo adaptador |
 | `core/` | Perfil, estados, armazenamento, e o `recon.py` | importado, ou `python core/recon.py <url>` |
 | `app/` | API FastAPI + Kanban das candidaturas | `uvicorn app.api.main:app` |
 | `tools/upwork/` | Pontuação de vaga e preenchimento de proposta | `python tools/upwork/pontuar.py <dataset>` |
@@ -222,10 +239,22 @@ flowchart LR
 
 ### Por que 16 adaptadores e não um genérico
 
-Foi tentado o genérico primeiro. Não sobrevive: Ashby monta o campo depois do JS, Workable
-usa máscara de moeda que transforma `15000` em `R$ 15,00`, Greenhouse casa pergunta por
-texto visível e o LinkedIn Easy Apply rejeita `Cidade, UF, Brasil` mas aceita `Cidade,
-Brazil`. Cada gotcha desses está escrito no adaptador que o encontrou, com a data.
+Foi tentado o genérico primeiro. Não sobrevive, e cada motivo está escrito no adaptador
+que o encontrou, com a data:
+
+- **inHire** põe máscara de moeda no campo de salário: `fill('15000')` vira `R$ 15,00`
+  (`aplicar_inhire.py`).
+- **LinkedIn Easy Apply** recusa `Cidade, UF, Brasil` com *Please enter a valid answer* e
+  aceita `Cidade, Brazil` (`aplicar_easyapply.py`).
+- **Greenhouse** casa pergunta por texto visível, não por `name`, então o mesmo campo muda
+  de identificador entre vagas (`aplicar_greenhouse.py`).
+- **Ashby** monta o campo depois do JS, e por cima **rejeita envio automatizado**: 5 de 5
+  tentativas. O adaptador existe para preencher e parar, não para enviar
+  (`docs/ats-gotchas.md`).
+
+Dos 16, **6 são por ATS** (Ashby, Easy Apply, GeekHunter, Greenhouse, inHire, Teamtailor)
+e **10 são por empresa**, porque a empresa usa formulário próprio. Dois são becos sem
+saída conhecidos, mantidos porque mapear o formulário ainda vale.
 
 `core/recon.py` é o que torna isso barato: aponta para um formulário desconhecido e ele
 devolve o mapa dos campos, com id, rótulo e tipo. O adaptador novo sai desse mapa.
@@ -319,10 +348,24 @@ porque é o único e-mail que muda a vida de quem procura vaga. `EXPIRANDO` vem 
 ```bash
 git clone https://github.com/MatheusEdson/esteira-vaga
 cd esteira-vaga
+python -m venv venv && . venv/bin/activate     # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env      # preencha
+
+cp .env.example .env                  # preencha DATABASE_URL e as chaves
+cp perfil.example.json data/perfil.json   # preencha: SEM isto nada roda
+git config core.hooksPath .githooks   # liga o bloqueio de segredo no commit
+
 psql "$DATABASE_URL" -f tools/esteira/schema.sql
 ```
+
+**Os três `cp` não são opcionais.** `data/perfil.json` é a única fonte de verdade sobre o
+que pode ser afirmado num formulário, e campo vazio faz o adaptador **abortar** em vez de
+inventar resposta. É de propósito.
+
+Para os adaptadores, ainda: coloque seus currículos em `curriculos/`, anexos em `anexos/`
+e as respostas dissertativas em `respostas/` — as três pastas são gitignored, e os nomes
+dos arquivos saem do `data/perfil.json`. Eles usam o navegador pelo canal `msedge`, então
+é preciso ter Edge ou Chrome instalado (ou mudar `VAGAS_CANAL`).
 
 ```bash
 python tools/esteira/gmail_vagas.py autorizar   # uma vez

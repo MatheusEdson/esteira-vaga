@@ -51,7 +51,12 @@ jobs:
           falhou=0
           for f in $(git ls-files); do
             [ -f "$f" ] || continue
-            case "$f" in .githooks/*|*.example.*|*example*.json) continue ;; esac
+            # Pula quem CITA os padroes: o hook e este proprio workflow. Sem isto o job
+            # acusa a si mesmo para sempre. Arquivo de exemplo tambem, que existe para
+            # conter placeholder.
+            case "$f" in
+              .githooks/*|.github/workflows/*|*.example.*|*example*.json) continue ;;
+            esac
 
             if grep -qE "(xkeysib|GOCSPX|sk-[A-Za-z0-9]{20}|ghp_[A-Za-z0-9]{20}|AKIA[0-9A-Z]{16})" "$f"; then
               echo "::error file=$f::credencial"; falhou=1

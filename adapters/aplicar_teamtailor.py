@@ -8,7 +8,7 @@ Uso:
   python aplicar_teamtailor.py <url-da-vaga> --cv web_seo
   python aplicar_teamtailor.py <url-da-vaga> --cv paid_seo --submit
 """
-import sys, os, json, re
+import sys, os, re
 import sys as _sys, os as _os
 _d = _os.path.dirname(_os.path.abspath(__file__))
 for _c in (_d, _os.path.dirname(_d)):
@@ -18,7 +18,7 @@ from nav import sync_playwright   # patchright endurecido, ver nav.py
 BASE = os.path.dirname(os.path.abspath(__file__))
 from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
 PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
+from core.perfil import curriculo as _cv, anexo as _anexo
 ID, RESP, DELIC = PERFIL["identidade"], PERFIL["respostas_padrao"], PERFIL["respostas_delicadas"]
 
 # ------------------------------------------------------------------ argumentos

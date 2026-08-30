@@ -5,7 +5,7 @@ A janela fica aberta ate' voce fechar.
 
   python preencher_workable.py
 """
-import os, sys, json, re, time
+import os, sys, re, time
 import io
 import sys as _sys, os as _os
 _d = _os.path.dirname(_os.path.abspath(__file__))
@@ -18,7 +18,7 @@ ENVIAR = "--enviar" in sys.argv
 BASE = os.path.dirname(os.path.abspath(__file__))
 from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
 PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
+from core.perfil import curriculo as _cv
 
 def bloco(chave):
     """Le uma resposta dissertativa de respostas/workable.md.

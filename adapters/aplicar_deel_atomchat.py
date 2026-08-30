@@ -13,7 +13,7 @@ Decisoes registradas:
   - Respostas em INGLES: o formulario esta em espanhol e a vaga e para o Brasil; ingles e o
     neutro que o CV dele sustenta.
 """
-import sys, os, json, re, time
+import sys, os, re, time
 import io
 import sys as _sys, os as _os
 _d = _os.path.dirname(_os.path.abspath(__file__))
@@ -24,7 +24,7 @@ from nav import sync_playwright   # patchright endurecido, ver nav.py
 BASE = os.path.dirname(os.path.abspath(__file__))
 from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
 PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
+from core.perfil import curriculo as _cv
 
 def bloco(chave):
     """Le uma resposta dissertativa de respostas/deel_atomchat.md.

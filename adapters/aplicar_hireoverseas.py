@@ -5,7 +5,7 @@
 Respostas de plataforma: Amazon PPC e Walmart e TikTok = NAO (ele nao tem).
 Meta e Google = SIM. Contribution margin/TACOS = "Somewhat" (TACOS e' jargao de Amazon).
 """
-import sys, os, json, re, time
+import sys, os, re, time
 import sys as _sys, os as _os
 _d = _os.path.dirname(_os.path.abspath(__file__))
 for _c in (_d, _os.path.dirname(_d)):
@@ -17,7 +17,7 @@ JANELA = "--janela" in sys.argv   # abre visivel e deixa o Matheus resolver o Tu
 BASE = os.path.dirname(os.path.abspath(__file__))
 from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
 PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
+from core.perfil import curriculo as _cv, anexo as _anexo
 ID = PERFIL["identidade"]
 
 def do_perfil(chave, secao="respostas_padrao"):

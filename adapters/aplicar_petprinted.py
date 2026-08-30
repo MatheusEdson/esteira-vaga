@@ -10,7 +10,7 @@ As respostas longas e os numeros de negociacao (pretensao, verba gerida, anos de
 experiencia) vem do data/perfil.json, que fica fora do git. Este arquivo guarda so
 a mecanica do formulario.
 """
-import sys, os, json, re, time
+import sys, os, re, time
 import io
 import sys as _sys, os as _os
 _d = _os.path.dirname(_os.path.abspath(__file__))

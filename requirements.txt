@@ -9,3 +9,7 @@ patchright>=1.62
 psycopg2-binary>=2.9
 google-api-python-client>=2.100
 google-auth-oauthlib>=1.1
+
+# desenvolvimento: o README manda `python -m pytest tests/ -q` e o CI roda os dois
+pytest>=8.0
+pyflakes>=3.2

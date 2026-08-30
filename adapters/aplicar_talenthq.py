@@ -13,7 +13,7 @@ Notas de decisao:
   - NAO afirmar LinkedIn Ads (esta no NUNCA_AFIRMAR). O requisito da vaga e OR entre
     Google / Meta / LinkedIn / Programmatic, e Google + Meta ja satisfaz.
 """
-import sys, os, json, re, time
+import sys, os, re, time
 import sys as _sys, os as _os
 _d = _os.path.dirname(_os.path.abspath(__file__))
 for _c in (_d, _os.path.dirname(_d)):
@@ -23,7 +23,7 @@ from nav import sync_playwright   # patchright endurecido, ver nav.py
 BASE = os.path.dirname(os.path.abspath(__file__))
 from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
 PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
+from core.perfil import curriculo as _cv
 
 
 def do_perfil(chave, secao="respostas_padrao"):

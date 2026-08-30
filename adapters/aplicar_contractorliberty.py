@@ -8,7 +8,7 @@ Regras: nada aqui afirma o que nao esta no perfil.json.
   Image/Video editing = Some experience (dirige producao, nao e editor)
   Salario = respostas_padrao.expected_salary_usd_month do perfil
 """
-import sys, os, json, re, time
+import sys, os, re, time
 import io
 import sys as _sys, os as _os
 _d = _os.path.dirname(_os.path.abspath(__file__))
