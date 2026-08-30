@@ -9,6 +9,7 @@ Particularidades tratadas aqui:
   anti-spam. Preencher REPROVA a candidatura. Fica vazio de proposito.
 """
 import sys, os, json, re
+import io
 import sys as _sys, os as _os
 _d = _os.path.dirname(_os.path.abspath(__file__))
 for _c in (_d, _os.path.dirname(_d)):
@@ -16,28 +17,38 @@ for _c in (_d, _os.path.dirname(_d)):
 from nav import sync_playwright   # patchright endurecido, ver nav.py
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-PERFIL = json.load(open(os.path.join(BASE, "perfil.json"), encoding="utf-8"))
+from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
+PERFIL = _carregar_perfil()
+from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
+
+def bloco(chave):
+    """Le uma resposta dissertativa de respostas/floowi.md.
+
+    As respostas nao vivem no codigo porque carregam metrica de empregador e de cliente.
+    respostas/ e gitignored. Sem o arquivo, ABORTA em vez de enviar formulario vazio.
+    """
+    from core.perfil import respostas_md
+    caminho = respostas_md("floowi.md")
+    if not os.path.exists(caminho):
+        raise SystemExit(
+            "ERRO: nao achei %s\n"
+            "Crie o arquivo com uma secao por resposta:\n"
+            "  ## NOME_DA_CHAVE\n  seu texto aqui\n"
+            "Ver docs/respostas-formato.md." % caminho)
+    txt = io.open(caminho, encoding="utf-8").read()
+    m = re.search(r"^##\s+" + re.escape(chave) + r"\s*$(.*?)(?=^##\s|\Z)",
+                  txt, re.M | re.S)
+    if not m or not m.group(1).strip():
+        raise SystemExit("ERRO: falta a secao '## %s' em %s" % (chave, caminho))
+    return m.group(1).strip()
+
 ID = PERFIL["identidade"]
-CV = os.path.join(BASE, PERFIL["curriculos"]["web_seo"])
+CV = _cv("web_seo")
 URL = "https://floowi.na.teamtailor.com/jobs/682828-senior-seo-strategist"
 DO_SUBMIT = "--submit" in sys.argv
 
-HTML_CSS_JS = (
-    "Yes. I build and rebuild client landing pages and sites myself. HTML and CSS daily, JavaScript "
-    "mainly for tracking and tag management: data layer work, GTM including server-side containers, and "
-    "conversion APIs. I also use React and TypeScript for internal dashboards, and I maintain a WordPress "
-    "estate of 400+ landing pages with a custom mu-plugin stack, which is where most of my technical SEO "
-    "fixes actually get shipped."
-)
-AI_TOOLS = (
-    "I use Claude Code as an execution layer rather than a writing assistant. It is connected through MCP "
-    "to the systems where the work lives: Google Search Console, the Google Ads and Meta APIs, BigQuery and "
-    "PostgreSQL. That lets an agent pull live data, run an audit and write the change instead of describing "
-    "it. Concrete tasks: technical and indexation audits, schema generation and validation, log and "
-    "crawl analysis, competitor and SERP research, and fully automated monthly client reporting. I also use "
-    "n8n and Langflow for orchestration and Whisper for call transcription. The rule I keep is that anything "
-    "a model produces is verified against the API or the database before it counts as a finding."
-)
+HTML_CSS_JS = bloco("HTML_CSS_JS")
+AI_TOOLS = bloco("AI_TOOLS")
 GEO = (
     "Yes, and I want to be precise about the measurement rather than overstate it. I implemented a GEO "
     "layer across an agency portfolio and my own properties: llms.txt, entity disambiguation, and "

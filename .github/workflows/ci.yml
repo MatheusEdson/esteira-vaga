@@ -1,0 +1,107 @@
+name: CI
+
+# Por que este workflow existe, e nao e' burocracia: o hook de pre-commit so' roda na
+# maquina de quem commita. Basta um `--no-verify`, um clone novo sem
+# `git config core.hooksPath .githooks`, ou um commit feito pela interface do GitHub, e
+# ele nao roda. Foi assim que um telefone e uma nota interna chegaram ao repo publico.
+# Aqui a mesma verificacao roda no servidor, onde ninguem pode pular.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Instalar so' o necessario para o teste
+        # Os testes cobrem as regras de classificacao, que sao funcao pura sobre texto.
+        # Nao precisam de Postgres, de navegador nem de credencial do Google, e instalar
+        # o patchright aqui puxaria um Chromium inteiro por nada.
+        run: pip install pytest
+
+      - name: Testes
+        run: python -m pytest tests/ -q
+
+      - name: Tudo compila
+        run: python -m compileall -q adapters core tools app tests nav.py
+
+      - name: Lint
+        run: |
+          pip install pyflakes
+          python -m pyflakes adapters core tools app tests nav.py
+
+  segredos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: O mesmo hook, agora onde nao da' para pular
+        # Roda a verificacao contra a arvore inteira, e nao so' contra o que foi alterado.
+        # Um segredo que entrou num commit anterior continua sendo um segredo publicado.
+        run: |
+          falhou=0
+          for f in $(git ls-files); do
+            [ -f "$f" ] || continue
+            case "$f" in .githooks/*|*.example.*|*example*.json) continue ;; esac
+
+            if grep -qE "(xkeysib|GOCSPX|sk-[A-Za-z0-9]{20}|ghp_[A-Za-z0-9]{20}|AKIA[0-9A-Z]{16})" "$f"; then
+              echo "::error file=$f::credencial"; falhou=1
+            fi
+            if grep -q -- "-----BEGIN .*PRIVATE KEY-----" "$f"; then
+              echo "::error file=$f::chave privada"; falhou=1
+            fi
+            if grep -qE "[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}" "$f"; then
+              echo "::error file=$f::parece CPF"; falhou=1
+            fi
+            # String de conexao: so' acusa se a senha NAO parecer placeholder.
+            # `postgresql://usuario:senha@host` e' o exemplo que a doc deve conter.
+            if grep -oE "postgres(ql)?://[^:/]+:[^@]{4,}@" "$f" \
+               | grep -viE ":(senha|password|passwd|pass|secret|xxx+|troque|change|your|seu|sua)[^@]*@" \
+               | grep -q .; then
+              echo "::error file=$f::string de conexao com senha real"; falhou=1
+            fi
+            # Telefone: mesma regra do hook. Formatado, sem digito repetido, fora de
+            # linha de exemplo. Ver .githooks/pre-commit para o historico das 3 versoes.
+            if grep -v -iE "(^|[^a-z])(ex|exemplo|example)[:.]" "$f" \
+               | grep -oE "(\+55[ -]?[0-9]{2}|\([0-9]{2}\))[ -]?9[0-9]{4}[ -]?[0-9]{4}|9[0-9]{4}-[0-9]{4}" \
+               | tr -cd "0-9\n" | grep -vE "([0-9])\1{7}" | grep -q .; then
+              echo "::error file=$f::parece telefone"; falhou=1
+            fi
+          done
+          [ "$falhou" = "0" ] || exit 1
+          echo "Nenhum segredo na arvore."
+
+      - name: Arquivo de exemplo continua sendo exemplo
+        # Falha se alguem preencher o .example com valor REAL em vez de copiar para .env.
+        # O criterio nao e' comprimento: placeholder honesto e' descritivo e portanto longo
+        # ("caminho/para/gmail-oauth-client.json"). O que denuncia segredo de verdade e'
+        # prefixo conhecido ou cadeia longa sem vogal nem separador, que e' como se parece
+        # um token gerado.
+        run: |
+          if grep -qE "^[A-Z_]+=(xkeysib-|GOCSPX-|sk-|ghp_|AKIA)" .env.example; then
+            echo "::error::.env.example tem credencial de verdade"
+            exit 1
+          fi
+          if grep -oE "^[A-Z_]+=[A-Za-z0-9+/_-]{24,}$" .env.example \
+             | grep -viE "=(caminho|troque|exemplo|example|your|change|seu|sua)" \
+             | grep -q .; then
+            echo "::error::.env.example tem valor que parece token gerado"
+            exit 1
+          fi
+          python - <<'PY'
+          import json, sys
+          d = json.load(open("perfil.example.json", encoding="utf-8"))
+          ident = d["identidade"]
+          if "@exemplo.com" not in ident["email"] and "@example" not in ident["email"]:
+              sys.exit("perfil.example.json tem e-mail real")
+          print("exemplos continuam genericos")
+          PY

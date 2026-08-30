@@ -12,7 +12,9 @@ for _c in (_d, _os.path.dirname(_d)):
 from nav import sync_playwright   # patchright endurecido, ver nav.py
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-PERFIL = json.load(open(os.path.join(BASE, "perfil.json"), encoding="utf-8"))
+from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
+PERFIL = _carregar_perfil()
+from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
 ID = PERFIL["identidade"]
 
 if len(sys.argv) < 2:
@@ -21,13 +23,13 @@ URL = sys.argv[1]
 DO_SUBMIT = "--submit" in sys.argv
 MD = sys.argv[sys.argv.index("--respostas") + 1] if "--respostas" in sys.argv else None
 trilha = sys.argv[sys.argv.index("--cv") + 1] if "--cv" in sys.argv else "web_seo"
-CV = os.path.join(BASE, PERFIL["curriculos"][trilha])
+CV = _cv(trilha)
 print(f"[0] CV: {os.path.basename(CV)}")
 
 
 def secoes(md):
     """Le o .md e devolve {trecho_da_pergunta: resposta}."""
-    txt = open(os.path.join(BASE, md), encoding="utf-8").read()
+    txt = open(_resp(md), encoding="utf-8").read()
     out = {}
     for bloco in re.split(r"\n## ", txt)[1:]:
         cab, _, corpo = bloco.partition("\n")

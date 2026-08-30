@@ -57,6 +57,19 @@ def resposta(chave: str, default: str = "") -> str:
     return v if isinstance(v, str) else (default if v is None else str(v))
 
 
+def _exigir(caminho: str, oque: str) -> str:
+    """Falha AGORA, nao depois de abrir o navegador.
+
+    Nove adaptadores descobriam o arquivo faltando so' no set_input_files, ja' com o
+    formulario preenchido e a sessao gasta. O custo de reabrir e passar de novo pelo
+    desafio de bot e alto; o de checar um caminho e zero."""
+    if not Path(caminho).exists():
+        raise SystemExit(
+            "ERRO: nao achei o %s em:\n  %s\n"
+            "Coloque o arquivo la, ou corrija o nome em data/perfil.json." % (oque, caminho))
+    return caminho
+
+
 def curriculo(trilha: str) -> str:
     """Caminho do CV para a trilha. Resolve relativo a' raiz do repo."""
     nome = _bruto().get("curriculos", {}).get(trilha, "")
@@ -64,7 +77,8 @@ def curriculo(trilha: str) -> str:
         raise KeyError("trilha de curriculo desconhecida: %s. Disponiveis: %s"
                        % (trilha, ", ".join(_bruto().get("curriculos", {}))))
     p = Path(nome)
-    return str(p if p.is_absolute() else PERFIL_JSON.parent.parent / "curriculos" / nome)
+    return _exigir(str(p if p.is_absolute() else
+                       PERFIL_JSON.parent.parent / "curriculos" / nome), "curriculo")
 
 
 def anexo(chave: str) -> str:
@@ -161,7 +175,7 @@ def tel_nacional() -> str:
 
 def ddi() -> str:
     d = tel_com_pais()
-    return d[:2] if len(d) > 10 else "55"
+    return ident("ddi", "") or (d[:2] if len(d) > 12 else "55")
 
 
 # ------------------------------------------------------------------ local

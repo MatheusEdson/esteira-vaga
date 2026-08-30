@@ -4,9 +4,10 @@
   python aplicar_talenthq.py --submit    # envia
 
 Notas de decisao:
-  - "Why should we consider YOU for this position?" = PLATANO, literal. A vaga pede isso de
-    proposito, e o campo e input de UMA linha, o que confirma que esperam so a palavra.
-    E filtro de atencao: quem escreve paragrafo falhou no teste.
+  - "Why should we consider YOU for this position?" espera UMA palavra literal, definida
+    no anuncio. O campo e input de uma linha, o que confirma. E filtro de atencao: quem
+    escreve paragrafo falhou no teste. A palavra sai do perfil, nao do codigo: publicar o
+    gabarito de triagem de outra empresa queima o mecanismo dela.
   - Resume em INGLES obrigatorio ("Only Resumes in English will be considered").
   - Gender = "Prefer Not to Say": campo de diversidade, nao qualificacao. Nao presumo.
   - NAO afirmar LinkedIn Ads (esta no NUNCA_AFIRMAR). O requisito da vaga e OR entre
@@ -20,9 +21,20 @@ for _c in (_d, _os.path.dirname(_d)):
 from nav import sync_playwright   # patchright endurecido, ver nav.py
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-PERFIL = json.load(open(os.path.join(BASE, "perfil.json"), encoding="utf-8"))
+from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
+PERFIL = _carregar_perfil()
+from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
+
+
+def do_perfil(chave, secao="respostas_padrao"):
+    """Le do perfil e ABORTA se vazio. Ver aplicar_contractorliberty.py."""
+    v = PERFIL.get(secao, {}).get(chave)
+    v = str(v).strip() if v is not None else ""
+    if not v:
+        raise SystemExit("ERRO: preencha %s.%s no data/perfil.json" % (secao, chave))
+    return v
 ID = PERFIL["identidade"]
-CV = os.path.join(BASE, PERFIL["curriculos"]["paid_seo"])
+CV = _cv("paid_seo")
 
 URL = "https://www.careers-page.com/talenthq/job/7XV78493"
 SUBMIT = "--submit" in sys.argv
@@ -33,7 +45,7 @@ CAMPOS = {
     "1530183": ID["email"],                        # Email
     "1530184": ID["telefone_formatado"],           # Phone
     "1530188": "Brazil",                           # Country of Residence
-    "1530189": "PLATANO",                          # Why should we consider YOU
+    "1530189": do_perfil("palavra_chave_triagem"),  # Why should we consider YOU
 }
 GENERO = "Prefer Not to Say"
 

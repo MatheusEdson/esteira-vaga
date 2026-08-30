@@ -58,9 +58,9 @@ ACHADO REAPROVEITAVEL: a pergunta customizada 'Where are you currently located?'
 
 ## careers-page.com (Manatal)  _(1 caso)_
 
-**TalentHQ (staffing p/ empresas dos EUA; recrutadora Claudia Manchi, apply@candidates.thetalenthq.co)**
+**TalentHQ (staffing p/ empresas dos EUA; recrutadora a recrutadora, o e-mail de contato da vaga)**
 
-- 1) FILTRO DE ATENCAO: a vaga instrui responder literalmente 'PLATANO' na pergunta 'Why should we consider YOU for this position?'. O campo e input de UMA linha, o que confirma que esperam so a palavra. Escrever paragrafo la = falhar no teste.
+- 1) FILTRO DE ATENCAO: a vaga instrui responder literalmente uma palavra-chave na pergunta 'Why should we consider YOU for this position?'. O campo e input de UMA linha, o que confirma que esperam so a palavra. Escrever paragrafo la = falhar no teste.
 - 2) O formulario so existe depois de clicar o botao Apply (button.btn-lg); antes disso a pagina tem 0 campos visiveis e os labels vem como template Angular '[[ field.label ]]'.
 - 3) IDs de campo comecam com digito (1530182), entao seletor CSS '#1530182' e INVALIDO; usar input[name='...'].
 - 4) NAO afirmar LinkedIn Ads (NUNCA_AFIRMAR): o requisito e OR entre Google/Meta/LinkedIn/Programmatic e Google+Meta ja satisfaz.
@@ -72,7 +72,7 @@ ACHADO REAPROVEITAVEL: a pergunta customizada 'Where are you currently located?'
 
 - SETE, todos no adaptador aplicar_deel_atomchat.py:
 - 1) LIMITE DE 500 CARACTERES nas dissertativas, e o campo NAO declara maxLength: aceita o texto todo em silencio, marca aria-invalid=true sem mensagem no campo, e o botao Apply fica disabled para sempre. Achado por bissecao (498 valido, 598 invalido); o contador '480/500' existe na tela mas passa batido.
-- 2) O parser de CV da Deel SOBRESCREVE firstName/lastName: subir o PDF ANTES de preencher os textos, senao lastName virava 'Edson Moreira Sobrenome'.
+- 2) O parser de CV da Deel SOBRESCREVE firstName/lastName: subir o PDF ANTES de preencher os textos, senao lastName virava 'Nome DoMeio Sobrenome'.
 - 3) O campo de preaviso e inputmode=numeric com min=10 max=100, ou seja DIAS: '2 weeks' virava '2' e reprovava por ficar abaixo do minimo; o certo e '14'.
 - 4) O dial code e combobox com autocomplete (role=combobox), nao aceita fill puro: clicar, digitar 'Brazil', ArrowDown, Enter.
 - 5) O checkbox de consentimento NAO TEM ROTULO nenhum; casar por indice (e o ultimo dos 11), nao por texto.
@@ -119,6 +119,6 @@ Os campos cf_contact_number/month/year/cvc na pagina sao boilerplate de template
 **Hire Overseas (staffing para clientes dos EUA)**
 
 - 1) Envio automatizado barrado: Workable tem backdrop [data-ui=backdrop] que engole o clique no submit E anti-bot da Cloudflare.
-- 2) Portfolio precisava ser LINK publico, nao anexo: publicado em https://matheusedson.com/portfolio/ (noindex) no vps2b.
+- 2) Portfolio precisava ser LINK publico, nao anexo: publicado em https://seudominio.com/portfolio/ (noindex) no vps2b.
 - 3) O resumo por IA do Loom escreveu 'Anthony Argos' e '50 client accounts' no video de 17/08; regenera a cada gravacao, conferir sempre antes de mandar o link.
 

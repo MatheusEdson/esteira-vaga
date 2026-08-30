@@ -16,7 +16,9 @@ for _c in (_d, _os.path.dirname(_d)):
 from nav import sync_playwright   # patchright endurecido, ver nav.py
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-PERFIL = json.load(open(os.path.join(BASE, "perfil.json"), encoding="utf-8"))
+from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
+PERFIL = _carregar_perfil()
+from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
 ID, RESP, DELIC = PERFIL["identidade"], PERFIL["respostas_padrao"], PERFIL["respostas_delicadas"]
 
 # ------------------------------------------------------------------ argumentos
@@ -32,8 +34,8 @@ if "--cv" in sys.argv:
 if "--salario" in sys.argv:
     PERFIL["respostas_padrao"]["expected_salary_usd_month"] = \
         sys.argv[sys.argv.index("--salario") + 1]
-CV = os.path.join(BASE, PERFIL["curriculos"][trilha])
-SPEED = os.path.join(BASE, PERFIL["anexos"]["speedtest"])
+CV = _cv(trilha)
+SPEED = _anexo("speedtest")
 for f in (CV, SPEED):
     if not os.path.exists(f):
         raise SystemExit(f"ERRO: nao achei {f}")

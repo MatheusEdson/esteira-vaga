@@ -1,68 +1,134 @@
 #!/bin/sh
-# Bloqueia commit com credencial ou dado pessoal.
+# Bloqueia segredo e dado pessoal ANTES do commit.
 #
-# Existe porque este repo e' PUBLICO. Uma senha hardcoded ja' chegou a entrar aqui uma vez
-# e so' nao vazou porque foi pega antes do primeiro push. Bot varre repo publico em minutos.
+# Instale com:  git config core.hooksPath .githooks
 #
-# Instalar:  git config core.hooksPath .githooks
-# Pular (so' se souber o que esta fazendo):  git commit --no-verify
+# Este hook e a primeira barreira, nao a unica. Ele so' ve o que esta staged e so' roda na
+# maquina de quem commita: um --no-verify, um clone sem core.hooksPath, ou um commit pela
+# interface do GitHub passam por cima. A segunda barreira e o job `segredos` do
+# .github/workflows/ci.yml, que roda a mesma checagem contra a arvore inteira, no servidor.
+#
+# Historico das regras de telefone, porque cada versao errou de um jeito diferente:
+#   v1  [0-9]{2}9[0-9]{8}   nao casava hifen -> um telefone formatado entrou em 2 arquivos
+#   v2  aceitou hifen        ficou larga: bloqueou o proprio arquivo de exemplo e um id de
+#                            pixel de 16 digitos
+#   v3  exigiu formatacao    REGRESSAO: parou de pegar digito colado, que a v1 pegava
+#   v4  as duas formas       formatado E colado, menos placeholder de digito repetido e
+#       (esta)               menos linha que se anuncia como exemplo
 
 falhou=0
 
-# arquivos que estao entrando no commit
-arquivos=$(git diff --cached --name-only --diff-filter=ACM)
-[ -z "$arquivos" ] && exit 0
+# IFS por quebra de linha: nome de arquivo com espaco nao pode ser dividido em dois, senao
+# o arquivo e' pulado em silencio e vira bypass acidental.
+OLD_IFS=$IFS
+IFS='
+'
 
-for f in $arquivos; do
-  [ -f "$f" ] || continue
-  # o proprio hook contem os padroes de deteccao; ignorar para nao se autobloquear
-  case "$f" in .githooks/*) continue ;; esac
+for f in $(git diff --cached --name-only --diff-filter=ACM); do
+  IFS=$OLD_IFS
+  [ -f "$f" ] || { IFS='
+'; continue; }
 
-  # 1. credencial atribuida a variavel
-  if git show ":$f" 2>/dev/null | grep -qiE "(senha|password|passwd|token|secret|api_?key) *[:=] *[\"'][A-Za-z0-9!@#$%^&*_.-]{10,}"; then
-    echo "BLOQUEADO  $f  -> parece ter credencial hardcoded"
+  # O proprio hook e o CI CITAM os padroes que procuram. Se olhassem para si mesmos,
+  # bloqueariam para sempre.
+  case "$f" in
+    .githooks/*|.github/workflows/ci.yml) IFS='
+'; continue ;;
+  esac
+
+  conteudo=$(git show ":$f" 2>/dev/null)
+
+  # ---------------------------------------------------------------- credencial ----
+  # Prefixo de provedor. Nao exige aspas em volta: a versao anterior exigia, e por isso
+  # um token solto dentro de um .env ou no meio de uma URL passava.
+  if printf '%s' "$conteudo" | grep -qE "(xkeysib-|GOCSPX-|sk_live_|sk-[A-Za-z0-9]{20}|ghp_[A-Za-z0-9]{20}|gho_[A-Za-z0-9]{20}|github_pat_[A-Za-z0-9_]{20}|glpat-[A-Za-z0-9_-]{20}|xox[baprs]-[A-Za-z0-9-]{10}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35})"; then
+    echo "BLOQUEADO  $f  -> credencial de provedor"
     falhou=1
   fi
 
-  # 2. chave privada
-  if git show ":$f" 2>/dev/null | grep -q -- "-----BEGIN .*PRIVATE KEY-----"; then
+  # Segredo da AWS: a chave secreta nao tem prefixo, so' aparece ao lado do nome do campo.
+  if printf '%s' "$conteudo" | grep -qiE "aws_secret_access_key[[:space:]]*[=:][[:space:]]*[\"']?[A-Za-z0-9/+]{32,}"; then
+    echo "BLOQUEADO  $f  -> chave secreta da AWS"
+    falhou=1
+  fi
+
+  # JWT com tres segmentos.
+  if printf '%s' "$conteudo" | grep -qE "eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\."; then
+    echo "BLOQUEADO  $f  -> JWT"
+    falhou=1
+  fi
+
+  if printf '%s' "$conteudo" | grep -q -- "-----BEGIN .*PRIVATE KEY-----"; then
     echo "BLOQUEADO  $f  -> chave privada"
     falhou=1
   fi
 
-  # 3. dado pessoal brasileiro: CPF formatado e telefone com DDD
-  if git show ":$f" 2>/dev/null | grep -qE "[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}"; then
-    echo "BLOQUEADO  $f  -> parece ter CPF"
+  # String de conexao com senha. Placeholder passa: postgresql://usuario:senha@host e' o
+  # exemplo que a documentacao PRECISA conter.
+  if printf '%s' "$conteudo" \
+     | grep -oiE "(postgres(ql)?|mysql|mongodb(\+srv)?|redis|amqp)://[^:/[:space:]]+:[^@[:space:]]{4,}@" \
+     | grep -viE ":(senha|password|passwd|pass|secret|token|xxx+|troque|change|your|seu|sua|user|usuario|examplo|example)[^@]*@" \
+     | grep -q .; then
+    echo "BLOQUEADO  $f  -> string de conexao com senha"
     falhou=1
   fi
-  # Telefone. A v1 deste hook so' casava digito colado ([0-9]{2}9[0-9]{8}) e por isso
-  # deixou "+55 DD 9NNNN-NNNN" entrar em dois adaptadores sem ninguem ver. A v2 aceitou
-  # hifen mas ficou larga e bloqueou o proprio arquivo de exemplo e um id de pixel.
-  #
-  # v3, tres condicoes: o numero precisa estar FORMATADO como humano escreve (com +55,
-  # com parenteses, ou com hifen), digito repetido oito vezes e' placeholder, e linha ou
-  # arquivo que se anuncia como exemplo nao conta. Numero real nao mora em linha "Ex:".
-  case "$f" in
-    *.example.*|*example*.json) ;;
-    *)
-      if git show ":$f" 2>/dev/null \
-         | grep -v -iE "(^|[^a-z])(ex|exemplo|example)[:.]" \
-         | grep -oE "(\+55[ -]?[0-9]{2}|\([0-9]{2}\))[ -]?9[0-9]{4}[ -]?[0-9]{4}|9[0-9]{4}-[0-9]{4}" \
-         | tr -cd "0-9\n" \
-         | grep -vE "([0-9])\1{7}" \
-         | grep -q .; then
-        echo "BLOQUEADO  $f  -> parece ter telefone com DDD"
-        falhou=1
-      fi
-      ;;
-  esac
+
+  # Atribuicao direta de senha no codigo.
+  if printf '%s' "$conteudo" \
+     | grep -oiE "(senha|password|passwd|secret|api_key|apikey|token)[[:space:]]*[=:][[:space:]]*[\"'][^\"']{8,}[\"']" \
+     | grep -viE "[\"'](troque|change|your|seu|sua|xxx+|placeholder|exemplo|example|caminho|<|\\\$|os\.environ|process\.env)" \
+     | grep -q .; then
+    echo "BLOQUEADO  $f  -> senha ou chave atribuida no codigo"
+    falhou=1
+  fi
+
+  # ------------------------------------------------------------ dado pessoal ----
+  # CPF pontuado, e tambem em digito puro quando o campo se anuncia.
+  if printf '%s' "$conteudo" | grep -qE "[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}"; then
+    echo "BLOQUEADO  $f  -> parece CPF"
+    falhou=1
+  fi
+  if printf '%s' "$conteudo" \
+     | grep -oiE "cpf[[:space:]]*[=:\"'][[:space:]]*[\"']?[0-9]{11}" \
+     | grep -q .; then
+    echo "BLOQUEADO  $f  -> parece CPF sem pontuacao"
+    falhou=1
+  fi
+
+  # Telefone brasileiro, nas DUAS formas: formatado e colado. Ver o historico no topo.
+  # Nao isenta arquivo de exemplo: placeholder honesto usa digito repetido (99999-9999,
+  # +5511999999999) e ja' cai na regra de repeticao. Isentar o arquivo faria do molde de
+  # dado pessoal o unico lugar onde um telefone real entra em silencio.
+  if printf '%s' "$conteudo" \
+     | grep -v -iE "(^|[^a-z])(ex|exemplo|example)[:.]" \
+     | grep -oE "(^|[^0-9])(\+?55[ -]?)?\(?[0-9]{2}\)?[ -]?9[0-9]{4}[ -]?[0-9]{4}([^0-9]|$)" \
+     | tr -cd "0-9\n" \
+     | grep -vE "([0-9])\1{7}" \
+     | grep -q .; then
+    echo "BLOQUEADO  $f  -> parece telefone com DDD"
+    falhou=1
+  fi
+
+  # Cartao de credito: 16 digitos em grupos de 4. Fora de linha de exemplo.
+  if printf '%s' "$conteudo" \
+     | grep -v -iE "(^|[^a-z])(ex|exemplo|example)[:.]" \
+     | grep -oE "\b[0-9]{4}[ -][0-9]{4}[ -][0-9]{4}[ -][0-9]{4}\b" \
+     | tr -cd "0-9\n" \
+     | grep -vE "([0-9])\1{11}" \
+     | grep -q .; then
+    echo "BLOQUEADO  $f  -> parece numero de cartao"
+    falhou=1
+  fi
+
+  IFS='
+'
 done
+IFS=$OLD_IFS
 
 if [ "$falhou" = "1" ]; then
   echo ""
-  echo "Nada foi commitado. Tire o dado do codigo e use variavel de ambiente."
-  echo "Se for falso positivo:  git commit --no-verify"
+  echo "Nada foi commitado. Tire o dado do codigo e leia de variavel de ambiente ou do"
+  echo "data/perfil.json, que e' gitignored."
+  echo "Se for mesmo falso positivo:  git commit --no-verify"
   exit 1
 fi
-
-exit 0

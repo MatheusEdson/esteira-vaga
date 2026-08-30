@@ -14,7 +14,9 @@ for _c in (_d, _os.path.dirname(_d)):
 from nav import sync_playwright   # patchright endurecido, ver nav.py
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-PERFIL = json.load(open(os.path.join(BASE, "perfil.json"), encoding="utf-8"))
+from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
+PERFIL = _carregar_perfil()
+from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
 ID = PERFIL["identidade"]
 
 def do_perfil(chave, secao="respostas_padrao"):
@@ -30,12 +32,12 @@ def do_perfil(chave, secao="respostas_padrao"):
         raise SystemExit("ERRO: preencha %s.%s no data/perfil.json" % (secao, chave))
     return v
 
-CV = os.path.join(BASE, PERFIL["curriculos"]["web_seo"])
-CARTA = os.path.join(BASE, "cover-letter-agent.pdf")
+CV = _cv("web_seo")
+CARTA = _anexo("cover-letter-agent.pdf")
 URL = "https://jobs.ashbyhq.com/Agent/5d684cff-64ee-4ed7-bbbf-838c48b8ccd1/application"
 DO_SUBMIT = "--submit" in sys.argv
 
-MD = os.path.join(BASE, "respostas-agent-careers.md")
+MD = _resposta("respostas-agent-careers.md")
 
 
 def bloco(titulo):

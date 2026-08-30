@@ -14,6 +14,7 @@ Decisoes registradas:
     neutro que o CV dele sustenta.
 """
 import sys, os, json, re, time
+import io
 import sys as _sys, os as _os
 _d = _os.path.dirname(_os.path.abspath(__file__))
 for _c in (_d, _os.path.dirname(_d)):
@@ -21,7 +22,31 @@ for _c in (_d, _os.path.dirname(_d)):
 from nav import sync_playwright   # patchright endurecido, ver nav.py
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-PERFIL = json.load(open(os.path.join(BASE, "perfil.json"), encoding="utf-8"))
+from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
+PERFIL = _carregar_perfil()
+from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
+
+def bloco(chave):
+    """Le uma resposta dissertativa de respostas/deel_atomchat.md.
+
+    As respostas nao vivem no codigo porque carregam metrica de empregador e de cliente.
+    respostas/ e gitignored. Sem o arquivo, ABORTA em vez de enviar formulario vazio.
+    """
+    from core.perfil import respostas_md
+    caminho = respostas_md("deel_atomchat.md")
+    if not os.path.exists(caminho):
+        raise SystemExit(
+            "ERRO: nao achei %s\n"
+            "Crie o arquivo com uma secao por resposta:\n"
+            "  ## NOME_DA_CHAVE\n  seu texto aqui\n"
+            "Ver docs/respostas-formato.md." % caminho)
+    txt = io.open(caminho, encoding="utf-8").read()
+    m = re.search(r"^##\s+" + re.escape(chave) + r"\s*$(.*?)(?=^##\s|\Z)",
+                  txt, re.M | re.S)
+    if not m or not m.group(1).strip():
+        raise SystemExit("ERRO: falta a secao '## %s' em %s" % (chave, caminho))
+    return m.group(1).strip()
+
 ID = PERFIL["identidade"]
 
 def do_perfil(chave, secao="respostas_padrao"):
@@ -37,7 +62,7 @@ def do_perfil(chave, secao="respostas_padrao"):
         raise SystemExit("ERRO: preencha %s.%s no data/perfil.json" % (secao, chave))
     return v
 
-CV = os.path.join(BASE, PERFIL["curriculos"]["gtm_engineer"])
+CV = _cv("gtm_engineer")
 
 URL = ("https://jobs.deel.com/atomchat/job-details/"
        "da6eaa1a-23f9-4a15-ac97-e32c2d865799/application")
@@ -67,35 +92,15 @@ NAO_MARCAR = ["Clay", "Smartlead / Lemlist", "HeyReach / Waalaxy",
 # maxLength. Ele aceita o texto inteiro em silencio, marca aria-invalid=true sem mostrar
 # mensagem no campo, e o botao Apply fica disabled para sempre. Achado por bissecao:
 # 498 chars = valido, 598 = invalido.
-OUTBOUND_DESAFIO = (
-    "The hardest part was trusting the data, not sending it. I built the engine end to end: "
-    "scraping and enrichment into PostgreSQL, A/B/C/D scoring, n8n running the sequences. The "
-    "last run held 4,999 scored leads. The complex part: a validation gate upstream was silently "
-    "rejecting about 5,400 records a month before they ever reached the pipeline, and no "
-    "dashboard showed it, because every dashboard counted only what passed. Since then I count "
-    "what I reject, not only what I accept."
-)
+OUTBOUND_DESAFIO = bloco("OUTBOUND_DESAFIO")
 
-OUTBOUND_SOZINHO = (
-    "Yes, end to end and on my own. I designed the schema, wrote the scrapers, built the "
-    "enrichment and the A/B/C/D scoring, wired the sequences in n8n and owned the reporting. Last "
-    "cohort: 4,999 scored leads, 329 emails, 20% open rate, zero opt-outs. The honest weak point: "
-    "67 engaged leads were never worked by anyone. That was a handoff failure, not a tooling one, "
-    "so I now treat the sales handoff and the agreed definition of a qualified lead as part of "
-    "the build."
-)
+OUTBOUND_SOZINHO = bloco("OUTBOUND_SOZINHO")
 
 for _nome, _txt in (("OUTBOUND_DESAFIO", OUTBOUND_DESAFIO), ("OUTBOUND_SOZINHO", OUTBOUND_SOZINHO)):
     if len(_txt) > 500:
         raise SystemExit("ERRO: %s tem %d chars, limite do campo e 500" % (_nome, len(_txt)))
 
-ANOS_GTM = (
-    "Three years. My background is engineering, so I came into GTM from the automation and data "
-    "side rather than from sales: three years building acquisition, marketing automation and "
-    "outbound infrastructure, including 47 n8n workflows in production and an orchestration layer "
-    "of more than twenty Claude Code agents connected over MCP to PostgreSQL, BigQuery and the ad "
-    "platform APIs."
-)
+ANOS_GTM = bloco("ANOS_GTM")
 
 SALARIO_ESPERADO = do_perfil("expected_salary_usd_month")
 ULTIMA_REMUNERACAO = do_perfil("ultima_remuneracao_usd")

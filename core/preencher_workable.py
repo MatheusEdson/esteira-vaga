@@ -6,6 +6,7 @@ A janela fica aberta ate' voce fechar.
   python preencher_workable.py
 """
 import os, sys, json, re, time
+import io
 import sys as _sys, os as _os
 _d = _os.path.dirname(_os.path.abspath(__file__))
 for _c in (_d, _os.path.dirname(_d)):
@@ -15,20 +16,36 @@ from nav import sync_playwright   # patchright endurecido, ver nav.py
 ENVIAR = "--enviar" in sys.argv
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-PERFIL = json.load(open(os.path.join(BASE, "perfil.json"), encoding="utf-8"))
+from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
+PERFIL = _carregar_perfil()
+from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
+
+def bloco(chave):
+    """Le uma resposta dissertativa de respostas/workable.md.
+
+    As respostas nao vivem no codigo porque carregam metrica de empregador e de cliente.
+    respostas/ e gitignored. Sem o arquivo, ABORTA em vez de enviar formulario vazio.
+    """
+    from core.perfil import respostas_md
+    caminho = respostas_md("workable.md")
+    if not os.path.exists(caminho):
+        raise SystemExit(
+            "ERRO: nao achei %s\n"
+            "Crie o arquivo com uma secao por resposta:\n"
+            "  ## NOME_DA_CHAVE\n  seu texto aqui\n"
+            "Ver docs/respostas-formato.md." % caminho)
+    txt = io.open(caminho, encoding="utf-8").read()
+    m = re.search(r"^##\s+" + re.escape(chave) + r"\s*$(.*?)(?=^##\s|\Z)",
+                  txt, re.M | re.S)
+    if not m or not m.group(1).strip():
+        raise SystemExit("ERRO: falta a secao '## %s' em %s" % (chave, caminho))
+    return m.group(1).strip()
+
 ID = PERFIL["identidade"]
-CV = os.path.join(BASE, PERFIL["curriculos"]["web_seo"])
+CV = _cv("web_seo")
 SALARIO = str(PERFIL["respostas_padrao"].get("expected_salary_usd_month") or "")
 
-MULTI_LOCAL = (
-    "Yes. My portfolio was built on local service businesses: automotive (auto parts retail, paint "
-    "protection film and car repair), veterinary clinics, aesthetics and dental-adjacent clinics, and "
-    "home services such as waterproofing and security installation. I ran Google Ads for roughly fifteen "
-    "of these accounts at the same time, including Google Business Profile campaigns and local-intent "
-    "search, and I owned the landing pages and conversion tracking behind them. Most were single-location "
-    "businesses, so my depth is in running many local accounts in parallel rather than one account with "
-    "many branches."
-)
+MULTI_LOCAL = bloco("MULTI_LOCAL")
 MAIOR_MULTI = (
     "Most of my portfolio is single-location, so I want to be straight about this: I have not run a single "
     "account with dozens of branches. The largest multi-site account I managed was an industrial group with "
@@ -38,14 +55,7 @@ QTD_SEO = (
     "Around fifteen at the same time, as Head of Paid Media and SEO at the agency, across both SEO and paid "
     "media for the same accounts."
 )
-INDUSTRIAS = (
-    "Automotive (auto parts retail, paint protection film, car repair), veterinary and pet services, "
-    "aesthetics and dental-adjacent clinics, food and restaurants, e-commerce, and industrial B2B "
-    "(packaging and tubing). Yes to local service businesses specifically: waterproofing and home "
-    "protection, phone repair and security installation. Local SEO and Google Business Profile were the "
-    "primary growth lever for most of them: category and service structuring, NAP consistency across "
-    "directories, local pack positioning and review flow."
-)
+INDUSTRIAS = bloco("INDUSTRIAS")
 
 # pergunta (regex no label) -> resposta. Booleanos usam True/False.
 VOCAROO = PERFIL["anexos"]["vocaroo_30s"]

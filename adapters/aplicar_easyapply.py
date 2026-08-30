@@ -23,7 +23,9 @@ def sem_acento(s):
     return "".join(c for c in n if unicodedata.category(c) != "Mn")
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-PERFIL = json.load(open(os.path.join(BASE, "perfil.json"), encoding="utf-8"))
+from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
+PERFIL = _carregar_perfil()
+from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
 ID = PERFIL["identidade"]
 
 if len(sys.argv) < 2:
@@ -37,7 +39,7 @@ URL = f"https://www.linkedin.com/jobs/view/{JOB}/"
 CV = None
 if "--cv" in sys.argv:
     chave = sys.argv[sys.argv.index("--cv") + 1]
-    CV = os.path.join(BASE, PERFIL["curriculos"][chave])
+    CV = _cv(chave)
 
 # respostas verdadeiras, todas ancoradas no perfil.json
 RESP = [

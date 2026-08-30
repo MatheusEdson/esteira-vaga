@@ -68,3 +68,30 @@ log/
 
 # tabela real de mascaramento: lista o que deve ser escondido
 tools/redacao/mapa.local.js
+
+# Perfil real, em QUALQUER diretorio. Os adaptadores ja apontam para data/, mas se alguem
+# criar o arquivo onde um traceback antigo apontava, ele carrega CPF e telefone.
+perfil.json
+**/perfil.json
+!perfil.example.json
+
+# Segredo de OAuth do Google. O token ja estava coberto por _tmp/; o client secret nao.
+*oauth*client*.json
+*client_secret*.json
+
+# Ambiente em formatos que .env / .env.* nao pegam
+env.sh
+*.env.sh
+
+# Estado de execucao: quem se candidatou, o que esta na fila, sessao de navegador
+enviadas.json
+**/enviadas.json
+fila.md
+cookies.json
+transicoes.jsonl
+
+# Perfil de navegador criado pelo proprio codigo (nav.py). Contem COOKIE DE SESSAO do
+# LinkedIn e da Upwork: um `git add -A` versionaria a sessao logada.
+_perfil-nav/
+_perfil-edge/
+**/_perfil-*/

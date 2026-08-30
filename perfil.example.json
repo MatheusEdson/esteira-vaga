@@ -54,7 +54,9 @@
     "_leia": "Cada chave e' consultada pelos adaptadores quando o formulario faz a pergunta correspondente. Vazio faz o adaptador ABORTAR em vez de inventar. E' proposital.",
     "presencial_cidade_propria_ok": "",
     "salario_atual_brl": "",
-    "ultima_remuneracao_usd": ""
+    "ultima_remuneracao_usd": "",
+    "palavra_chave_triagem": "",
+    "_triagem_nota": "Algumas vagas pedem uma palavra literal no campo aberto, como filtro de atencao. A palavra vem do anuncio e fica aqui, nunca no codigo: publicar o gabarito de triagem de outra empresa queima o mecanismo dela."
   },
   "NUNCA_AFIRMAR": {
     "_leia": "Se a vaga exigir qualquer item daqui como requisito obrigatorio, NAO enviar. Nao preencher campo que force essa alegacao.",

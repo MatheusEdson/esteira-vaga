@@ -1,4 +1,4 @@
-"""Conexao com o Supabase pessoal. Le a URL do .env do repo AIOS, nunca de literal.
+"""Conexao com o Supabase pessoal. Le a URL do .env deste repo, nunca de literal.
 
 GOTCHA conhecido do projeto: o pooler do Supabase mudou de `aws-0` pra `aws-1` e a string
 velha da' `tenant or user not found`, que parece senha errada. Se der isso, e' host, nao
@@ -7,7 +7,7 @@ credencial. Ver memoria `gotcha-supabase-pooler-aws0-aws1`.
 import os, io, re
 
 ENV = os.environ.get("ENV_FILE", ".env")
-CHAVE = "SUPABASE_PESSOAL_DB_URL"
+CHAVE = "DATABASE_URL"
 
 
 def url():
@@ -22,7 +22,7 @@ def url():
             v = linha.split("=", 1)[1].strip().strip('"').strip("'")
             if v:
                 return v
-    raise SystemExit("%s existe no arquivo mas esta vazio" % CHAVE)
+    raise SystemExit("%s nao esta no ambiente nem preenchida no .env" % CHAVE)
 
 
 def conectar():

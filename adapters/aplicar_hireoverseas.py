@@ -15,7 +15,9 @@ from nav import sync_playwright   # patchright endurecido, ver nav.py
 JANELA = "--janela" in sys.argv   # abre visivel e deixa o Matheus resolver o Turnstile
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-PERFIL = json.load(open(os.path.join(BASE, "perfil.json"), encoding="utf-8"))
+from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
+PERFIL = _carregar_perfil()
+from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
 ID = PERFIL["identidade"]
 
 def do_perfil(chave, secao="respostas_padrao"):
@@ -32,8 +34,8 @@ def do_perfil(chave, secao="respostas_padrao"):
     return v
 
 AN = PERFIL["anexos"]
-CV = os.path.join(BASE, PERFIL["curriculos"]["paid_seo"])
-PORTFOLIO = os.path.join(BASE, AN["portfolio_pdf"])
+CV = _cv("paid_seo")
+PORTFOLIO = _anexo("portfolio_pdf")
 URL = "https://careers.hireoverseas.com/_/j/68E7F0BB61/apply/"
 DO_SUBMIT = "--submit" in sys.argv
 

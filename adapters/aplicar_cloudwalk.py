@@ -11,7 +11,9 @@ for _c in (_d, _os.path.dirname(_d)):
 from nav import sync_playwright   # patchright endurecido, ver nav.py
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-PERFIL = json.load(open(os.path.join(BASE, "perfil.json"), encoding="utf-8"))
+from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
+PERFIL = _carregar_perfil()
+from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
 ID = PERFIL["identidade"]
 RESP = PERFIL["respostas_padrao"]
 
@@ -29,7 +31,7 @@ URL = "https://www.cloudwalk.io/jobs-positions/technical-seo-ai-growth-builder-a
 
 def secao(md, titulo):
     """Extrai uma secao do respostas-cloudwalk.md pelo cabecalho."""
-    txt = open(os.path.join(BASE, md), encoding="utf-8").read()
+    txt = open(_resp(md), encoding="utf-8").read()
     blocos = re.split(r"\n## ", txt)
     for b in blocos:
         if b.strip().startswith(titulo):

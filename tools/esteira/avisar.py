@@ -37,8 +37,8 @@ API = "https://api.brevo.com/v3/smtp/email"
 def _forcar_ipv4():
     """Sai sempre por IPv4.
 
-    O Brevo autoriza por IP de origem, e a vps2b tem saida v4 (46.202.148.1) E v6
-    (2a02:4780:14:3d1d::1). Sem forcar, a rota escolhe sozinha e o IP autorizado hoje
+    O Brevo autoriza por IP de origem, e a a VPS tem saida v4 (<IP-DE-SAIDA-DA-SUA-VPS>) E v6
+    (<IPV6-DE-SAIDA-DA-SUA-VPS>). Sem forcar, a rota escolhe sozinha e o IP autorizado hoje
     pode nao ser o usado amanha: o alerta morreria com 401 parecendo chave errada.
     Um IP so' pra autorizar, e ele nao muda."""
     orig = socket.getaddrinfo
@@ -53,7 +53,7 @@ _forcar_ipv4()
 
 CHAVE = os.environ.get("BREVO_API_KEY_ESTEIRA", "")
 DE = os.environ.get("BREVO_SENDER_ESTEIRA", "")
-PARA = os.environ.get("AVISO_PARA", os.environ.get("AVISO_PARA", ""))
+PARA = os.environ.get("AVISO_PARA", "")
 
 # Assunto por estado, do mais urgente pro menos.
 PESO = {"OFERTA": 0, "EXPIRANDO": 1, "convite": 2, "entrevista": 3}
@@ -107,6 +107,8 @@ def montar(linhas):
 
 
 def enviar(assunto, html):
+    if not PARA:
+        raise SystemExit("ERRO: AVISO_PARA nao esta definido. Sem destinatario o Brevo\n                         devolve 400, que nao parece falta de configuracao.")
     if not CHAVE or not DE:
         raise SystemExit(
             "faltam as chaves da conta Brevo da esteira:\n"
@@ -132,7 +134,7 @@ def enviar(assunto, html):
             # mensagem parece chave errada. O proprio corpo diz qual IP ele viu.
             raise SystemExit(
                 "Brevo devolveu 401 - quase sempre e' IP NAO AUTORIZADO, nao chave errada.\n"
-                "Libere o IP de saida da vps2b (46.202.148.1) em:\n"
+                "Libere o IP de saida da a VPS (<IP-DE-SAIDA-DA-SUA-VPS>) em:\n"
                 "  https://app.brevo.com/security/authorised_ips\n"
                 "Detalhe do Brevo: %s" % det)
         raise SystemExit("Brevo %s: %s" % (e.code, det))

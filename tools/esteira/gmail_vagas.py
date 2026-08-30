@@ -143,6 +143,9 @@ RUIDO_ASSUNTO = [
 # ESTADO. Primeiro que casa ganha, entao a ordem E' a prioridade.
 # `OFERTA` no topo: carta proposta e' o unico e-mail que muda a vida dele.
 # `EXPIRANDO` antes de entrevista: prazo vencendo vale mais que convite parado.
+# A ordem E a prioridade. `rejeitada` vem ANTES de `entrevista` porque
+# "agradecemos sua participacao na entrevista, optamos por outros perfis"
+# tem as duas palavras, e o que importa e o desfecho.
 REGRAS = [
     ("OFERTA", r"carta proposta|offer letter|job offer|we(?:'| a)re pleased to offer|"
                r"proposta de trabalho|seu perfil foi aprovado|"
@@ -153,10 +156,6 @@ REGRAS = [
     ("convite", r"invited you to (?:a job|submit a proposal)|invitation to interview for|"
                 r"invites you to a (?:video )?interview|you(?:'|&#39;|&rsquo;)?ve been "
                 r"invited|no connects needed|apply for free"),
-    ("entrevista", r"schedule (?:a |an )?(?:call|interview|chat)|calendly|book a time|"
-                   r"interview invitation|invitation for|entrevista|agendar|"
-                   r"meet\.google|zoom\.us/j/|interview reminder|meeting invite|"
-                   r"event confirmation for|start your interview"),
     ("rejeitada", r"unfortunately|not (?:moving|proceed|selected)|"
                   r"decided to (?:move|go) (?:forward|ahead) with|other candidates|"
                   r"no longer under consideration|regret to inform|"
@@ -166,6 +165,10 @@ REGRAS = [
                   r"n[\u00e3a]o (?:seguiremos|prosseguir|foi|seguiu)|"
                   r"processo (?:seletivo )?(?:foi )?(?:encerrado|finalizado)|"
                   r"seguimos com outro"),
+    ("entrevista", r"schedule (?:a |an )?(?:call|interview|chat)|calendly|book a time|"
+                   r"interview invitation|invitation for|entrevista|agendar|"
+                   r"meet\.google|zoom\.us/j/|interview reminder|meeting invite|"
+                   r"event confirmation for|start your interview"),
     ("respondida", r"thank you for (?:your )?(?:application|proposal|interest)|"
                    r"received your (?:application|proposal)|next steps|"
                    r"reviewing your|recebemos sua|application received|"

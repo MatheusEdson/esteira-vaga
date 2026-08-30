@@ -9,6 +9,7 @@ Regras: nada aqui afirma o que nao esta no perfil.json.
   Salario = respostas_padrao.expected_salary_usd_month do perfil
 """
 import sys, os, json, re, time
+import io
 import sys as _sys, os as _os
 _d = _os.path.dirname(_os.path.abspath(__file__))
 for _c in (_d, _os.path.dirname(_d)):
@@ -16,7 +17,30 @@ for _c in (_d, _os.path.dirname(_d)):
 from nav import sync_playwright   # patchright endurecido, ver nav.py
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-PERFIL = json.load(open(os.path.join(BASE, "perfil.json"), encoding="utf-8"))
+from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
+PERFIL = _carregar_perfil()
+
+def bloco(chave):
+    """Le uma resposta dissertativa de respostas/contractorliberty.md.
+
+    As respostas nao vivem no codigo porque carregam metrica de empregador e de cliente.
+    respostas/ e gitignored. Sem o arquivo, ABORTA em vez de enviar formulario vazio.
+    """
+    from core.perfil import respostas_md
+    caminho = respostas_md("contractorliberty.md")
+    if not os.path.exists(caminho):
+        raise SystemExit(
+            "ERRO: nao achei %s\n"
+            "Crie o arquivo com uma secao por resposta:\n"
+            "  ## NOME_DA_CHAVE\n  seu texto aqui\n"
+            "Ver docs/respostas-formato.md." % caminho)
+    txt = io.open(caminho, encoding="utf-8").read()
+    m = re.search(r"^##\s+" + re.escape(chave) + r"\s*$(.*?)(?=^##\s|\Z)",
+                  txt, re.M | re.S)
+    if not m or not m.group(1).strip():
+        raise SystemExit("ERRO: falta a secao '## %s' em %s" % (chave, caminho))
+    return m.group(1).strip()
+
 ID = PERFIL["identidade"]
 
 def do_perfil(chave, secao="respostas_padrao"):
@@ -70,21 +94,7 @@ PLATAFORMAS = [
     ("zJgovKt1kICrdLEwpULT", "Google Docs",               "Very experienced"),
 ]
 
-NARRATIVA = (
-    "I run Meta lead generation for local service businesses as my main job: veterinary clinics, "
-    "aesthetics clinics, auto repair and detailing, waterproofing and home protection, food and retail. "
-    "At the agency I had around fifteen of these accounts running at the same time, and today I also run "
-    "paid acquisition across nine business segments for a fintech at roughly US$180k per month in managed "
-    "spend on Meta and Google. My best-performing channel on Meta for local lead gen is click-to-WhatsApp, "
-    "where I brought cost per qualified conversation to about US$2.50 by cutting creative fatigue with "
-    "method instead of guesswork: frequency went from 3.66 to 1.56 with CTR at 2.61%, driven by placement "
-    "and frequency breakdown rather than by feel. What I bring beyond buying is measurement: I own the "
-    "tracking behind the campaigns, including server-side GTM and the Conversions API with deduplication, "
-    "so the lead count a client sees is the real one. On one account I traced a silent revenue leak to a "
-    "301 redirect that was stripping click IDs before they reached the site, and nothing in any dashboard "
-    "was flagging it. I also spent about a year working inside GoHighLevel at an agency, so the path from "
-    "a Meta lead form or a WhatsApp click into the pipeline is familiar territory."
-)
+NARRATIVA = bloco("NARRATIVA")
 
 JS_GRUPOS = """() => {
   const NL = String.fromCharCode(10);
@@ -259,7 +269,7 @@ with sync_playwright() as p:
         e.focus(); e.value = v;
         e.dispatchEvent(new Event('input',  {bubbles:true}));
         e.dispatchEvent(new Event('change', {bubbles:true}));
-        return e.value; }""", AN["vocaroo"] if "vocaroo" in AN else "https://voca.ro/1fg3w2y0zWFz")
+        return e.value; }""", AN["vocaroo"] if "vocaroo" in AN else "")
     print("   vocaroo =", r)
 
     print("\n[7] ESTADO FINAL (conferir antes de enviar)")

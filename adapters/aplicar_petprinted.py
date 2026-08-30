@@ -11,6 +11,7 @@ experiencia) vem do data/perfil.json, que fica fora do git. Este arquivo guarda 
 a mecanica do formulario.
 """
 import sys, os, json, re, time
+import io
 import sys as _sys, os as _os
 _d = _os.path.dirname(_os.path.abspath(__file__))
 for _c in (_d, _os.path.dirname(_d)):
@@ -18,7 +19,30 @@ for _c in (_d, _os.path.dirname(_d)):
 from nav import sync_playwright   # patchright endurecido, ver nav.py
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-PERFIL = json.load(open(os.path.join(BASE, "perfil.json"), encoding="utf-8"))
+from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
+PERFIL = _carregar_perfil()
+
+def bloco(chave):
+    """Le uma resposta dissertativa de respostas/petprinted.md.
+
+    As respostas nao vivem no codigo porque carregam metrica de empregador e de cliente.
+    respostas/ e gitignored. Sem o arquivo, ABORTA em vez de enviar formulario vazio.
+    """
+    from core.perfil import respostas_md
+    caminho = respostas_md("petprinted.md")
+    if not os.path.exists(caminho):
+        raise SystemExit(
+            "ERRO: nao achei %s\n"
+            "Crie o arquivo com uma secao por resposta:\n"
+            "  ## NOME_DA_CHAVE\n  seu texto aqui\n"
+            "Ver docs/respostas-formato.md." % caminho)
+    txt = io.open(caminho, encoding="utf-8").read()
+    m = re.search(r"^##\s+" + re.escape(chave) + r"\s*$(.*?)(?=^##\s|\Z)",
+                  txt, re.M | re.S)
+    if not m or not m.group(1).strip():
+        raise SystemExit("ERRO: falta a secao '## %s' em %s" % (chave, caminho))
+    return m.group(1).strip()
+
 ID = PERFIL["identidade"]
 
 def do_perfil(chave, secao="respostas_padrao"):
@@ -54,22 +78,7 @@ HORARIO    = ("GMT-3 (Brazil). I work 09:00 to 18:00 local, which overlaps Europ
               "afternoons and US mornings, and I can shift earlier to cover full CET hours.")
 ORIGEM     = "Facebook / Instagram"
 
-PORTFOLIO = (
-    "https://matheusedson.com/portfolio/ has the full set with the outcome stated for each "
-    "case. The two most relevant to you:\n\n"
-    "1. Ecommerce account reported at a 3x return that was not real. I split branded from "
-    "non-branded demand and rebuilt the attribution path: 52% of attributed revenue turned "
-    "out to be branded traffic that would have converted anyway, and one ad group was taking "
-    "63% of the budget at a 0.36x return. I cut it, rebuilt the account on a "
-    "conversion-maximising strategy against non-branded demand, and reported a defensible "
-    "2.24x at R$18.70 cost per conversion. A smaller number, and a real one.\n\n"
-    "2. Meta account with cost per conversation climbing as I scaled spend. Instead of "
-    "guessing at creative, I read the frequency and placement breakdown: frequency had "
-    "reached 3.66 and the cheapest placements were buying volume instead of intent. I moved "
-    "creative refresh onto a frequency trigger and pulled budget out of those placements. "
-    "Frequency came down to 1.56, CTR settled at 2.61%, and cost per qualified conversation "
-    "landed at about USD 2.50, the lowest in my portfolio."
-)
+PORTFOLIO = bloco("PORTFOLIO")
 
 
 def sel_por_texto(pg, indice, texto):

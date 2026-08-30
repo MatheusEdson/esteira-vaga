@@ -44,6 +44,27 @@ def test_rejeicao_em_portugues():
     assert estado == "rejeitada"
 
 
+def test_rejeicao_em_portugues_que_menciona_entrevista():
+    """O bug: a regra `entrevista` vinha ANTES de `rejeitada` e casava a palavra nua, entao
+    "agradecemos sua participacao na entrevista, optamos por outros perfis" era classificado
+    como entrevista. Assimetrico: em ingles acertava, porque "unfortunately" nao aparece
+    colado em "interview" do mesmo jeito. A ordem em REGRAS E a prioridade, e o que importa
+    num e-mail que tem as duas palavras e o desfecho."""
+    estado, _ = G.classificar(
+        "Retorno do Processo Seletivo\n"
+        "Agradecemos sua participacao na entrevista. Infelizmente optamos por seguir com "
+        "outros perfis neste momento.")
+    assert estado == "rejeitada"
+
+
+def test_convite_de_entrevista_continua_sendo_entrevista():
+    """Contraprova do teste acima: consertar a rejeicao nao pode engolir o convite."""
+    estado, _ = G.classificar(
+        "Proximos passos\n"
+        "Gostariamos de agendar uma entrevista com voce. Segue o link para escolher horario.")
+    assert estado == "entrevista"
+
+
 def test_rejeicao_em_ingles():
     estado, _ = G.classificar(
         "In regards to your application\n"

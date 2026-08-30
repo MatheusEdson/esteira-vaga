@@ -1,0 +1,24 @@
+# Fim de linha. O repo e escrito no Windows mas roda no Linux (cron, Docker), entao um
+# checkout que converte para CRLF quebra o shebang: `#!/bin/bash\r` vira um interpretador
+# chamado "bash\r", que nao existe, e o erro que aparece e "bad interpreter", que nao diz
+# nada sobre fim de linha.
+* text=auto eol=lf
+
+# Estes NUNCA podem virar CRLF, em nenhuma plataforma.
+*.sh    text eol=lf
+*.py    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.conf  text eol=lf
+Dockerfile text eol=lf
+.githooks/* text eol=lf
+
+# Binario: nao tentar normalizar nem mostrar diff de texto.
+*.png   binary
+*.jpg   binary
+*.pdf   binary
+*.ico   binary
+
+# Colapsa na revisao do GitHub: gerado ou de apoio, nao e o que se le para avaliar o repo.
+*.example.js linguist-documentation
+docs/*       linguist-documentation

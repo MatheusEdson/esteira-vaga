@@ -14,7 +14,9 @@ for _c in (_d, _os.path.dirname(_d)):
 from nav import sync_playwright   # patchright endurecido, ver nav.py
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-PERFIL = json.load(open(os.path.join(BASE, "perfil.json"), encoding="utf-8"))
+from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
+PERFIL = _carregar_perfil()
+from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
 ID = PERFIL["identidade"]
 RESP = PERFIL["respostas_padrao"]
 CIDADE_UF = "%s, %s" % (ID["cidade"], ID["estado"])
@@ -95,7 +97,7 @@ if len(sys.argv) < 2 or sys.argv[1] not in VAGAS:
 chave = sys.argv[1]
 V = VAGAS[chave]
 DO_SUBMIT = "--submit" in sys.argv
-CV = os.path.join(BASE, PERFIL["curriculos"][V["cv"]])
+CV = _cv(V["cv"])
 
 
 def combo(pg, input_id, valor, primeira=False):

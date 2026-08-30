@@ -12,7 +12,9 @@ for _c in (_d, _os.path.dirname(_d)):
 from nav import sync_playwright   # patchright endurecido, ver nav.py
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-PERFIL = json.load(open(os.path.join(BASE, "perfil.json"), encoding="utf-8"))
+from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
+PERFIL = _carregar_perfil()
+from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
 ID = PERFIL["identidade"]
 RESP = PERFIL["respostas_padrao"]
 
@@ -28,7 +30,7 @@ if len(sys.argv) < 2 or sys.argv[1] not in VAGAS:
     raise SystemExit(__doc__)
 chave = sys.argv[1]
 NOME, URL, CV_KEY = VAGAS[chave]
-CV = os.path.join(BASE, PERFIL["curriculos"][CV_KEY])
+CV = _cv(CV_KEY)
 DO_SUBMIT = "--submit" in sys.argv
 
 with sync_playwright() as p:
