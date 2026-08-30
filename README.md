@@ -1,5 +1,7 @@
 # esteira-vagas
 
+[![CI](https://github.com/MatheusEdson/esteira-vaga/actions/workflows/ci.yml/badge.svg)](https://github.com/MatheusEdson/esteira-vaga/actions/workflows/ci.yml)
+
 Ferramentas para conduzir uma busca de emprego como se conduz uma operação: com dado
 guardado, sinal separado de ruído, e decisão registrada.
 
