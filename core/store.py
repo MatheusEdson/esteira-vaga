@@ -119,12 +119,19 @@ def migrar(vagas: list[dict]) -> tuple[list[dict], int]:
 
 # ----------------------------------------------------------------- leitura
 def listar() -> list[dict]:
+    """Le e migra dentro do MESMO lock.
+
+    Antes, `_ler` acontecia fora dele. Se o app adicionasse uma vaga entre a leitura e a
+    escrita da migracao, a escrita sobrescrevia a vaga nova. `mover()` e `adicionar()` ja'
+    liam dentro do lock; so' esta ficou de fora, e e' a mais chamada."""
     vagas = _ler(VAGAS, [])
     vagas, mudou = migrar(vagas)
-    if mudou:
-        with Lock():
-            _escrever(VAGAS, vagas)
-    return vagas
+    if not mudou:
+        return vagas
+    with Lock():
+        atual, _ = migrar(_ler(VAGAS, []))
+        _escrever(VAGAS, atual)
+        return atual
 
 
 def perfil() -> dict:

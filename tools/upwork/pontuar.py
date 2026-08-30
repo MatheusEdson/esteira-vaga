@@ -29,8 +29,10 @@ VETO_TEXTO = [
     # So' casa EXIGENCIA DE MINIMO de 4 anos pra cima. Um range tipo "3-5 years" pede
     # minimo 3 e ele qualifica; vetar isso perderia vaga boa. Por isso o numero tem que
     # vir colado num marcador de minimo: o "+" ou "at least" / "minimum of" / "over".
-    (r"(?:[4-9]|1[0-9])\s*\+\s*years?", "exige 4+ anos; ele tem ~3"),
-    (r"(?:at least|minimum(?: of)?|over)\s+(?:[4-9]|1[0-9])\s+years?", "exige minimo de 4+ anos"),
+    # Precisa de contexto de EXIGENCIA. Sem ele, o regex pegava o cliente se descrevendo
+    # ("our agency has 5+ years of experience", "we are a team with over 10 years") e
+    # vetava vaga boa, num arquivo cuja premissa e nao desperdicar Connect. A vaga
+    # descartada nunca aparece, entao o erro era invisivel.
     (r"do not apply if you have a full[- ]time", "proibe quem tem emprego integral"),
     (r"no full[- ]time (?:job|position|role) elsewhere", "proibe quem tem emprego integral"),
     (r"must be (?:a )?(?:us|u\.s\.|united states|usa)[- ]based", "exige residir nos EUA"),
@@ -44,6 +46,46 @@ VETO_TEXTO = [
 ]
 
 
+
+# Anos de experiencia: quatro casos que um regex so' nao separa.
+#
+#   "our agency has 5+ years"          o CLIENTE se descrevendo   -> passa
+#   "we are a team with over 10 years" idem                       -> passa
+#   "you must have 5+ years"           exigencia real             -> veta
+#   "looking for 3-5 years"            faixa com minimo 3         -> passa, ele cabe
+#
+# A versao anterior era um regex sem ancora de contexto e pegava os dois primeiros. Num
+# arquivo cuja premissa e nao desperdicar Connect, o custo do falso veto e invisivel: a
+# vaga descartada nunca aparece na tela para alguem desconfiar.
+PEDE = (r"(?:you (?:must|should|will need to) have|must have|should have|require[sd]?|"
+        r"requirement|qualification|looking for|seeking|we need|candidate (?:must|should)|"
+        r"minimum(?: of)?|at least)")
+FALA_DE_SI = r"(?:we|our|us|the (?:agency|company|team)|i)\b"
+
+
+def _exige_anos(texto, minimo_dele=3):
+    """Devolve motivo se a vaga EXIGE mais anos do que ele tem. Senao, None."""
+    for m in re.finditer(r"(\d{1,2})\s*(?:-|to|a)\s*(\d{1,2})\s*\+?\s*years?", texto):
+        # Faixa: o que vale e o piso. "3-5 years" pede 3, e ele cabe.
+        if int(m.group(1)) <= minimo_dele:
+            texto = texto[:m.start()] + " " + texto[m.end():]
+
+    for m in re.finditer(r"(\d{1,2})\s*\+?\s*years?", texto):
+        n = int(m.group(1))
+        if n <= minimo_dele:
+            continue
+        antes = texto[max(0, m.start() - 90):m.start()]
+        # Se o sujeito mais proximo antes do numero e o proprio cliente, e apresentacao,
+        # nao exigencia.
+        pede = re.search(PEDE + r"[^.]{0,60}$", antes)
+        si = re.search(FALA_DE_SI + r"[^.]{0,60}$", antes)
+        if si and (not pede or si.start() > pede.start()):
+            continue
+        if pede or re.search(r"\+\s*years?", m.group(0)):
+            return "exige %d+ anos; ele tem ~%d" % (n, minimo_dele)
+    return None
+
+
 def dinheiro(s):
     if s is None:
         return None
@@ -53,7 +95,11 @@ def dinheiro(s):
 
 def vetos_do_texto(v):
     alvo = ((v.get("description") or "") + " " + (v.get("title") or "")).lower()
-    return [motivo for padrao, motivo in VETO_TEXTO if re.search(padrao, alvo)]
+    achados = [motivo for padrao, motivo in VETO_TEXTO if re.search(padrao, alvo)]
+    anos = _exige_anos(alvo)
+    if anos:
+        achados.append(anos)
+    return achados
 
 
 def avaliar(v):

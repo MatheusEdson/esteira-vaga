@@ -6,7 +6,10 @@ credencial. Ver memoria `gotcha-supabase-pooler-aws0-aws1`.
 """
 import os, io, re
 
-ENV = os.environ.get("ENV_FILE", ".env")
+# Ancorado na raiz do repo, e nao no diretorio atual: relativo ao cwd, rodar de
+# outro lugar lia o .env que estivesse la.
+from ambiente import caminho as _caminho_env
+ENV = str(_caminho_env())
 CHAVE = "DATABASE_URL"
 
 

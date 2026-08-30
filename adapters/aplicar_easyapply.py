@@ -63,7 +63,18 @@ RESP = [
 PLACEHOLDER = r"^\s*$|^(select an option|selecione(\s+uma)?(\s+op[cç][aã]o)?|escolha|choose)\s*$"
 
 def eh_vazio(v):
-    return not v or bool(re.match(PLACEHOLDER, v.strip(), re.I))
+    """Vazio inclui checkbox e radio NAO marcados.
+
+    O DUMP grava String(e.checked) no valor, entao um obrigatorio nao respondido chegava
+    aqui como a string "false" e passava como preenchido. Com auto-envio sem revisao, e'
+    justamente o caso que este guardrail existe para pegar: o formulario seguia para o
+    Submit com uma pergunta obrigatoria em branco."""
+    if v is None:
+        return True
+    v = str(v).strip()
+    if v.lower() == "false":
+        return True
+    return not v or bool(re.match(PLACEHOLDER, v, re.I))
 
 # Consentimento de tratamento de dados / termos: parte mecanica do ato de
 # candidatar-se, que ele autorizou. Nao e' alegacao de experiencia.

@@ -31,6 +31,8 @@ a busca de texto do Gmail resolve no servidor por uma fracao do custo. O modo `t
 pra reauditar o padrao quando ele mudar.
 """
 import sys, os, io, json, re, base64, unicodedata
+import ambiente as _amb  # carrega o .env; ver tools/esteira/ambiente.py
+_amb.carregar()
 
 
 def sem_acento(s):

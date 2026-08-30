@@ -29,6 +29,9 @@ de `env.sh` (na VPS) ou do ambiente:
 import sys, os, json, socket, urllib.request, urllib.error
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import ambiente as _amb  # carrega o .env; ver tools/esteira/ambiente.py
+_amb.carregar()
 import db
 
 API = "https://api.brevo.com/v3/smtp/email"

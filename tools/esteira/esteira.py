@@ -38,6 +38,9 @@ from datetime import timezone
 from email.utils import parsedate_to_datetime
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import ambiente as _amb  # carrega o .env; ver tools/esteira/ambiente.py
+_amb.carregar()
 import db
 import gmail_vagas as G
 
@@ -168,6 +171,8 @@ def sync(tudo=False):
           % (len(ids), len(ids) - len(novos), len(novos)))
 
     inseridos = 0
+
+    falhas = 0
     for i, mid in enumerate(novos, 1):
         try:
             cur.execute(UPSERT, linha(svc, mid))
@@ -175,14 +180,30 @@ def sync(tudo=False):
                 inseridos += 1
         except Exception as e:
             print("  falhou %s: %s" % (mid, str(e)[:90]))
-            c.rollback()
+            # O rollback descarta o LOTE inteiro nao-commitado, nao so' esta mensagem: ate'
+            # 24 linhas boas iam junto. Commitar o que ja' passou antes de reverter salva
+            # essas, e `falhas` impede o ponteiro de avancar por cima do que se perdeu.
+            try:
+                c.rollback()
+            except Exception:
+                pass
+            falhas += 1
             continue
         if i % 25 == 0:
             c.commit()
             print("  ... %d/%d" % (i, len(novos)))
     c.commit()
 
-    # Guarda o ponteiro DEPOIS de gravar, senao um erro no meio perde mensagem.
+    # Guarda o ponteiro DEPOIS de gravar, senao um erro no meio perde mensagem. E NAO
+    # guarda se alguma falhou: o ponteiro passaria por cima de mensagem que nao entrou no
+    # banco, e ela sumiria ate' alguem rodar `sync --tudo`. Prefiro reprocessar de graca a
+    # perder uma carta proposta.
+    if falhas:
+        print("ATENCAO: %d mensagem(ns) falharam. O historyId NAO foi avancado, entao o\n"
+              "proximo sync tenta de novo. Resolva o erro acima antes." % falhas)
+        c.commit()
+        c.close()
+        return inseridos
     perfil = svc.users().getProfile(userId="me").execute()
     cur.execute("""update vagas_sync set history_id=%s, ultimo_sync=now(), ultimo_erro=null,
                    mensagens=(select count(*) from vagas_emails) where id=1""",
