@@ -1,0 +1,11 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
+# patchright substitui o playwright: fork que remove o rastro de
+# Runtime.enable e para de injetar bindings. Ver nav.py.
+patchright>=1.62
+
+# esteira de e-mail (tools/esteira)
+psycopg2-binary>=2.9
+google-api-python-client>=2.100
+google-auth-oauthlib>=1.1

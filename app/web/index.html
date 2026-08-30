@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Esteira de Vagas</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%235b8cff'/%3E%3Crect x='7' y='8' width='5' height='16' rx='1.5' fill='%23fff'/%3E%3Crect x='14' y='8' width='5' height='11' rx='1.5' fill='%23fff' opacity='.75'/%3E%3Crect x='21' y='8' width='5' height='6' rx='1.5' fill='%23fff' opacity='.5'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#0b0d10; --sup:#13161b; --sup2:#191d24; --sup3:#20252d;
+    --bd:#232830; --bd2:#2e3542;
+    --tx:#e7e9ee; --mu:#8b939f; --dim:#5d656f;
+    --ac:#5b8cff; --ac-fraco:#1c2740;
+    --c-descoberta:#6e7683; --c-fila:#d9a03a; --c-enviada:#4f7fe8;
+    --c-respondida:#a273f2; --c-entrevista:#2bb673; --c-proposta:#f5b942;
+    --c-rejeitada:#d9534f; --c-nao_enviar:#3a4049;
+    --r:9px; --sombra:0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.22);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--tx);
+    font:14px/1.55 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex; flex-direction:column; -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--ac); text-decoration:none}
+  a:hover{text-decoration:underline}
+  ::-webkit-scrollbar{width:10px; height:10px}
+  ::-webkit-scrollbar-thumb{background:#272d36; border-radius:6px; border:2px solid var(--bg)}
+  ::-webkit-scrollbar-thumb:hover{background:#333b47}
+  ::-webkit-scrollbar-track{background:transparent}
+
+  /* ================= topo ================= */
+  header{
+    flex:0 0 auto; background:var(--sup); border-bottom:1px solid var(--bd);
+    padding:0 20px;
+  }
+  .h1linha{display:flex; align-items:center; gap:20px; padding:13px 0 11px; flex-wrap:wrap}
+  .marca{display:flex; align-items:baseline; gap:9px}
+  .marca b{font-size:15.5px; letter-spacing:-.15px}
+  .marca span{font-size:11.5px; color:var(--dim)}
+  nav{display:flex; gap:2px; background:var(--sup2); padding:3px; border-radius:8px}
+  nav button{
+    background:transparent; border:0; color:var(--mu); font:inherit; font-size:12.5px;
+    font-weight:600; padding:5px 13px; border-radius:6px; cursor:pointer;
+  }
+  nav button.on{background:var(--sup3); color:var(--tx); box-shadow:var(--sombra)}
+  nav button:hover:not(.on){color:var(--tx)}
+  .kpis{display:flex; gap:22px; margin-left:auto; flex-wrap:wrap}
+  .kpi b{display:block; font-size:19px; line-height:1.05; font-variant-numeric:tabular-nums;
+         letter-spacing:-.4px}
+  .kpi span{font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:.7px}
+  .kpi.destaque b{color:var(--c-entrevista)}
+
+  /* funil visual: substitui numero solto por proporcao que se le de relance */
+  .funil{display:flex; gap:3px; padding:0 0 12px}
+  .fseg{
+    height:5px; border-radius:3px; min-width:3px; position:relative; cursor:default;
+    transition:opacity .15s;
+  }
+  .fseg:hover{opacity:.75}
+
+  /* ================= entrada ================= */
+  .entrada{
+    flex:0 0 auto; background:var(--sup); border-bottom:1px solid var(--bd);
+    padding:11px 20px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  }
+  input,textarea,select,button{font:inherit; color:inherit}
+  input,textarea,select{
+    background:var(--bg); border:1px solid var(--bd); border-radius:7px;
+    padding:8px 11px; outline:none; transition:border-color .12s, box-shadow .12s;
+  }
+  input:focus,textarea:focus,select:focus{
+    border-color:var(--ac); box-shadow:0 0 0 3px var(--ac-fraco);
+  }
+  input::placeholder,textarea::placeholder{color:var(--dim)}
+  #url{flex:1 1 400px; min-width:230px}
+  .curto{flex:0 1 148px; min-width:104px}
+  button.b{
+    background:var(--ac); border:0; border-radius:7px; padding:8px 15px; color:#fff;
+    font-weight:600; cursor:pointer; transition:filter .12s;
+  }
+  button.b:hover{filter:brightness(1.12)}
+  button.g{background:transparent; border:1px solid var(--bd); color:var(--mu); font-weight:500}
+  button.g:hover{border-color:var(--bd2); color:var(--tx)}
+  button.mini{font-size:11.5px; padding:5px 10px}
+  .toast{
+    position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(120%);
+    background:var(--sup3); border:1px solid var(--bd2); border-radius:8px;
+    padding:10px 16px; font-size:13px; z-index:80; box-shadow:var(--sombra);
+    transition:transform .2s cubic-bezier(.2,.9,.3,1); max-width:min(560px,92vw);
+  }
+  .toast.on{transform:translateX(-50%) translateY(0)}
+  .toast.erro{border-color:#5c3034; background:#2a1a1d; color:#ffc2c2}
+
+  /* ================= quadro ================= */
+  .quadro{
+    flex:1 1 auto; min-height:0; display:flex; gap:11px; padding:15px 20px 18px;
+    overflow-x:auto; overflow-y:hidden; align-items:stretch;
+  }
+  .col{
+    flex:0 0 282px; display:flex; flex-direction:column; min-height:0;
+    background:var(--sup); border:1px solid var(--bd); border-radius:var(--r);
+    transition:border-color .12s, background .12s;
+  }
+  .col::before{
+    content:""; height:3px; border-radius:var(--r) var(--r) 0 0; background:var(--cor);
+  }
+  .col.alvo{border-color:var(--ac); background:#141a26}
+  .col-h{padding:9px 12px 10px; flex:0 0 auto}
+  .col-t{display:flex; align-items:center; gap:8px}
+  .col-t b{font-size:12.5px; letter-spacing:.1px}
+  .pill{
+    margin-left:auto; font-size:11px; color:var(--mu); background:var(--sup3);
+    padding:1px 8px; border-radius:20px; font-variant-numeric:tabular-nums;
+  }
+  .col-a{font-size:10.5px; color:var(--dim); line-height:1.35; margin-top:3px}
+  .cartoes{
+    flex:1 1 auto; min-height:52px; padding:0 8px 9px; overflow-y:auto;
+    display:flex; flex-direction:column; gap:7px;
+  }
+  .cartao{
+    flex:0 0 auto;            /* sem isto o cartao encolhe e corta cargo e tags */
+    background:var(--sup2); border:1px solid var(--bd); border-radius:8px;
+    padding:9px 11px 10px; cursor:grab; position:relative; overflow:hidden;
+    transition:transform .1s, border-color .12s, background .12s;
+  }
+  .cartao::before{
+    content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--cor);
+  }
+  .cartao:hover{border-color:var(--bd2); background:var(--sup3); transform:translateY(-1px)}
+  .cartao.arrastando{opacity:.35; cursor:grabbing}
+  .cartao b{display:block; font-size:13px; font-weight:600; line-height:1.32; letter-spacing:-.1px}
+  .cartao .role{color:var(--mu); font-size:11.5px; margin-top:2px; line-height:1.35}
+  .metas{display:flex; gap:5px; align-items:center; margin-top:8px; flex-wrap:wrap}
+  .t{font-size:10px; padding:1.5px 6px; border-radius:4px; background:#242a34; color:var(--mu)}
+  .t.din{background:#172b20; color:#84d6a4}
+  .t.avi{background:#2e2415; color:#e3bd80}
+  .t.sco{background:#1d2537; color:#8fb0f0}
+  .vazio{
+    color:var(--dim); font-size:11.5px; padding:14px 6px; text-align:center;
+    border:1px dashed var(--bd); border-radius:7px; margin:0 0 2px;
+  }
+
+  /* ================= perfil ================= */
+  .perfil{flex:1 1 auto; overflow-y:auto; padding:20px; display:none}
+  .perfil.on{display:block}
+  .quadro.off{display:none}
+  .larg{max-width:1080px; margin:0 auto}
+  .cartaoP{
+    background:var(--sup); border:1px solid var(--bd); border-radius:var(--r);
+    padding:16px 18px; margin-bottom:14px;
+  }
+  .cartaoP h2{
+    margin:0 0 3px; font-size:13.5px; letter-spacing:-.1px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .cartaoP h2 .n{font-size:10.5px; color:var(--dim); font-weight:400}
+  .cartaoP p.ajuda{margin:0 0 14px; font-size:12px; color:var(--mu); line-height:1.5}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:11px}
+  label{display:block}
+  label .k{
+    display:block; font-size:10.5px; color:var(--dim); text-transform:uppercase;
+    letter-spacing:.6px; margin-bottom:4px; font-weight:600;
+  }
+  label input,label textarea{width:100%}
+  label textarea{min-height:74px; resize:vertical; line-height:1.5}
+  .lista{display:flex; flex-direction:column; gap:11px}
+  .par{
+    display:grid; grid-template-columns:210px 1fr; gap:11px; align-items:start;
+    padding-bottom:11px; border-bottom:1px solid var(--bd);
+  }
+  .par:last-child{border-bottom:0; padding-bottom:0}
+  .par .rot{font-size:12px; color:var(--tx); font-weight:500; padding-top:8px; word-break:break-word}
+  .par .rot small{display:block; color:var(--dim); font-weight:400; font-size:10.5px; margin-top:2px}
+  .barra{
+    position:sticky; bottom:0; background:linear-gradient(transparent,var(--bg) 40%);
+    padding:14px 0 4px; display:flex; gap:9px; align-items:center;
+  }
+  .arq{
+    display:flex; align-items:center; gap:9px; padding:7px 10px; background:var(--sup2);
+    border:1px solid var(--bd); border-radius:7px; font-size:12px;
+  }
+  .arq .nm{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11.5px}
+  .arq .kb{color:var(--dim); font-size:10.5px; margin-left:auto}
+  .solta{
+    border:1.5px dashed var(--bd2); border-radius:8px; padding:16px; text-align:center;
+    color:var(--mu); font-size:12.5px; cursor:pointer; transition:border-color .12s, background .12s;
+  }
+  .solta:hover,.solta.sobre{border-color:var(--ac); background:var(--ac-fraco); color:var(--tx)}
+
+  /* ================= gaveta ================= */
+  .fundo{position:fixed; inset:0; background:rgba(0,0,0,.6); opacity:0; pointer-events:none;
+         transition:opacity .18s; z-index:60}
+  .fundo.on{opacity:1; pointer-events:auto}
+  .gav{
+    position:fixed; top:0; right:0; bottom:0; width:min(600px,100%); z-index:70;
+    background:var(--sup); border-left:1px solid var(--bd);
+    transform:translateX(100%); transition:transform .2s cubic-bezier(.2,.9,.3,1);
+    display:flex; flex-direction:column;
+  }
+  .gav.on{transform:none}
+  .gav-h{
+    padding:15px 18px 13px; border-bottom:1px solid var(--bd); display:flex; gap:12px;
+    align-items:flex-start; flex:0 0 auto;
+  }
+  .gav-h h2{margin:0; font-size:15px; line-height:1.3; letter-spacing:-.15px}
+  .gav-h .role{margin:3px 0 0; color:var(--mu); font-size:12.5px}
+  .chip{
+    display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:600;
+    padding:2px 8px; border-radius:20px; margin-top:7px;
+  }
+  .gav-b{padding:16px 18px 44px; overflow-y:auto}
+  .bl{margin-bottom:15px}
+  .bl h3{
+    margin:0 0 5px; font-size:10.5px; text-transform:uppercase; letter-spacing:.8px;
+    color:var(--dim); font-weight:700; display:flex; align-items:center; gap:8px;
+  }
+  .bl .v{
+    background:var(--bg); border:1px solid var(--bd); border-radius:7px; padding:9px 11px;
+    font-size:12.8px; white-space:pre-wrap; word-break:break-word; line-height:1.55;
+  }
+  .bl .v.mono{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11.8px}
+  .cp{margin-left:auto}
+  .hist{font-size:11.5px; color:var(--mu); line-height:1.9}
+  .hist code{background:var(--sup2); padding:1.5px 5px; border-radius:4px; font-size:10.8px}
+  @media (max-width:760px){
+    .par{grid-template-columns:1fr}
+    .kpis{width:100%; margin-left:0; gap:16px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="h1linha">
+    <div class="marca"><b>Esteira de Vagas</b><span id="sub">carregando…</span></div>
+    <nav>
+      <button id="tab-q" class="on">Quadro</button>
+      <button id="tab-p">Perfil</button>
+    </nav>
+    <div class="kpis" id="kpis"></div>
+  </div>
+  <div class="funil" id="funil"></div>
+</header>
+
+<div class="entrada" id="entrada">
+  <input id="url" type="url" placeholder="Cole a URL da vaga e aperte Enter" autocomplete="off">
+  <input id="empresa" class="curto" placeholder="Empresa" autocomplete="off">
+  <input id="titulo" class="curto" placeholder="Cargo" autocomplete="off">
+  <button class="b" id="add">Adicionar</button>
+  <button class="b g" id="rec">Recarregar</button>
+</div>
+
+<div class="quadro" id="quadro"></div>
+<div class="perfil" id="perfil"><div class="larg" id="perfil-corpo"></div></div>
+
+<div class="fundo" id="fundo"></div>
+<aside class="gav" id="gav">
+  <div class="gav-h">
+    <div style="min-width:0">
+      <h2 id="g-emp"></h2>
+      <p class="role" id="g-tit"></p>
+      <span class="chip" id="g-chip"></span>
+    </div>
+    <button class="b g mini" id="g-x" style="flex:0 0 auto">Fechar</button>
+  </div>
+  <div class="gav-b" id="g-corpo"></div>
+</aside>
+<div class="toast" id="toast"></div>
+
+<script>
+/* O gate do nginx exige ?key= em TODA rota sob /esteira/, inclusive a API. O front le
+   a chave da propria URL e repassa. Rodando local sem gate, `key` e' vazia e nao atrapalha. */
+const KEY = new URLSearchParams(location.search).get("key") || "";
+const comKey = u => KEY ? u + (u.includes("?") ? "&" : "?") + "key=" + encodeURIComponent(KEY) : u;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const cor = e => `var(--c-${e})`;
+let Q = null, PERFIL = null, ARQ = null;
+
+let tid;
+function toast(msg, erro){
+  const t = $("#toast");
+  t.textContent = msg;
+  t.className = "toast on" + (erro ? " erro" : "");
+  clearTimeout(tid);
+  tid = setTimeout(() => t.className = "toast" + (erro ? " erro" : ""), erro ? 6000 : 3000);
+}
+
+async function api(u, o){
+  const r = await fetch(comKey(u), Object.assign({headers:{"Content-Type":"application/json"}}, o||{}));
+  let c = null; try { c = await r.json(); } catch(e){}
+  if (!r.ok){ const err = new Error((c && (c.erro||c.detail))||("HTTP "+r.status));
+              err.status = r.status; err.corpo = c; throw err; }
+  return c;
+}
+
+/* ======================= quadro ======================= */
+function kpis(s){
+  const itens = [
+    ["Enviadas", s.enviadas, ""], ["Respostas", s.respostas, ""],
+    ["Taxa resp.", s.taxa_resposta + "%", ""],
+    ["Avançadas", s.avancadas, "destaque"],
+    ["Vivas", s.vivas, ""], ["Total", s.total, ""],
+  ];
+  $("#kpis").innerHTML = itens.map(([r,v,c]) =>
+    `<div class="kpi ${c}"><b>${esc(v)}</b><span>${esc(r)}</span></div>`).join("");
+  $("#sub").textContent = s.total + " vagas";
+
+  const tot = Math.max(1, s.total);
+  $("#funil").innerHTML = Q.colunas.map(c => {
+    const n = s.por_estado[c.id] || 0;
+    if (!n) return "";
+    return `<div class="fseg" style="flex:${n};background:${cor(c.id)}"
+              title="${esc(c.rotulo)}: ${n} de ${s.total}"></div>`;
+  }).join("");
+}
+
+function cartao(v){
+  const t = [];
+  if (v.ats) t.push(`<span class="t">${esc(String(v.ats).slice(0,26))}</span>`);
+  const sal = v.salario_pedido_usd || v.salario_anunciado_usd;
+  if (sal) t.push(`<span class="t din">US$ ${esc(sal)}</span>`);
+  if (v.score != null) t.push(`<span class="t sco">${esc(v.score)}</span>`);
+  if (v.pendencia_dele) t.push(`<span class="t avi">ação sua</span>`);
+  else if (v.gotchas || v.gotcha) t.push(`<span class="t avi">gotcha</span>`);
+  return `<div class="cartao" draggable="true" data-id="${esc(v.id)}"
+            style="--cor:${cor(v.estado)}">
+    <b>${esc(v.empresa)}</b>
+    <div class="role">${esc(String(v.titulo||"").slice(0,86))}</div>
+    ${t.length ? `<div class="metas">${t.join("")}</div>` : ""}
+  </div>`;
+}
+
+function render(){
+  $("#quadro").innerHTML = Q.colunas.map(c => {
+    const l = Q.vagas[c.id] || [];
+    return `<section class="col" data-col="${esc(c.id)}" style="--cor:${cor(c.id)}">
+      <div class="col-h">
+        <div class="col-t"><b>${esc(c.rotulo)}</b><span class="pill">${l.length}</span></div>
+        <div class="col-a">${esc(c.ajuda)}</div>
+      </div>
+      <div class="cartoes" data-drop="${esc(c.id)}">
+        ${l.length ? l.map(cartao).join("") : `<div class="vazio">vazia</div>`}
+      </div>
+    </section>`;
+  }).join("");
+  kpis(Q.stats);
+  arrasto();
+}
+
+async function carregar(){
+  try { Q = await api("api/quadro"); render(); }
+  catch(e){ toast("Falha ao carregar: " + e.message, true); }
+}
+
+let dragId = null;
+function arrasto(){
+  document.querySelectorAll(".cartao").forEach(el => {
+    el.addEventListener("dragstart", ev => {
+      dragId = el.dataset.id; el.classList.add("arrastando");
+      ev.dataTransfer.effectAllowed = "move";
+      ev.dataTransfer.setData("text/plain", dragId);
+    });
+    el.addEventListener("dragend", () => { el.classList.remove("arrastando"); dragId = null; });
+    el.addEventListener("click", () => abrir(el.dataset.id));
+  });
+  document.querySelectorAll("[data-drop]").forEach(z => {
+    const col = z.closest(".col");
+    z.addEventListener("dragover", ev => { ev.preventDefault(); col.classList.add("alvo"); });
+    z.addEventListener("dragleave", () => col.classList.remove("alvo"));
+    z.addEventListener("drop", async ev => {
+      ev.preventDefault(); col.classList.remove("alvo");
+      const id = ev.dataTransfer.getData("text/plain") || dragId, dest = z.dataset.drop;
+      if (!id) return;
+      const v = achar(id);
+      if (!v || v.estado === dest) return;
+      try {
+        await api(`api/vagas/${encodeURIComponent(id)}/estado`,
+                  {method:"PATCH", body:JSON.stringify({estado:dest})});
+        await carregar();
+        toast(`${v.empresa} → ${rot(dest)}`);
+      } catch(e){ toast("Não movi: " + e.message, true); }
+    });
+  });
+}
+function achar(id){
+  for (const k in Q.vagas){ const v = (Q.vagas[k]||[]).find(x => x.id === id); if (v) return v; }
+  return null;
+}
+const rot = id => (Q.colunas.find(c => c.id === id)||{}).rotulo || id;
+
+/* ======================= gaveta ======================= */
+function bl(t, v, mono){
+  if (v == null || v === "") return "";
+  const id = "c" + Math.random().toString(36).slice(2,8);
+  return `<div class="bl"><h3>${esc(t)}
+      <button class="b g mini cp" onclick="cp('${id}',this)">Copiar</button></h3>
+    <div class="v ${mono?"mono":""}" id="${id}">${esc(v)}</div></div>`;
+}
+window.cp = (id, b) => navigator.clipboard.writeText($("#"+id).textContent).then(() => {
+  const a = b.textContent; b.textContent = "Copiado"; setTimeout(() => b.textContent = a, 1300);
+});
+
+async function abrir(id){
+  try {
+    const d = await api("api/vagas/" + encodeURIComponent(id)), v = d.vaga;
+    $("#g-emp").textContent = v.empresa || "(sem empresa)";
+    $("#g-tit").textContent = v.titulo || "";
+    const ch = $("#g-chip");
+    ch.textContent = rot(v.estado);
+    ch.style.background = cor(v.estado) + "22";
+    ch.style.color = cor(v.estado);
+
+    let h = "";
+    if (v.url) h += `<div class="bl"><h3>Vaga</h3><div class="v mono">
+      <a href="${esc(v.url)}" target="_blank" rel="noopener">${esc(v.url)}</a></div></div>`;
+    const f = [["ATS",v.ats],["Data",v.data],["Currículo",v.cv],
+               ["Pretensão US$",v.salario_pedido_usd],["Anunciado US$",v.salario_anunciado_usd],
+               ["Score",v.score]].filter(([,x]) => x != null && x !== "");
+    if (f.length) h += `<div class="bl"><h3>Ficha</h3><div class="v">` +
+      f.map(([k,x]) => `${k}: ${esc(x)}`).join("\n") + `</div></div>`;
+    h += bl("Prova de envio", v.status_detalhe || v.status);
+    h += bl("Pendência sua", v.pendencia_dele);
+    h += bl("Respostas prontas", v.respostas, true);
+    h += bl("Observações", v.obs);
+    h += bl("Gotchas do ATS", v.gotchas || v.gotcha);
+    h += bl("Gaps reais", v.gaps_reais);
+    h += bl("Pergunta que travou", v.pergunta_que_travou || v.perguntas_que_travaram);
+    h += bl("Lição", v.licao);
+    h += bl("Recomendação", v.recomendacao);
+    h += bl("Decisão dele", v.decisao_dele);
+    if (d.transicoes && d.transicoes.length){
+      h += `<div class="bl"><h3>Histórico</h3><div class="hist">` + d.transicoes.map(t =>
+        `${t.em.slice(0,16).replace("T"," ")} &nbsp;<code>${esc(t.de||"—")}</code> →
+         <code>${esc(t.para)}</code>${t.nota ? " &nbsp;"+esc(t.nota) : ""}`).join("<br>") +
+        `</div></div>`;
+    }
+    $("#g-corpo").innerHTML = h || `<div class="vazio">Sem detalhe registrado.</div>`;
+    $("#gav").classList.add("on"); $("#fundo").classList.add("on");
+  } catch(e){ toast("Não abri: " + e.message, true); }
+}
+const fechar = () => { $("#gav").classList.remove("on"); $("#fundo").classList.remove("on"); };
+$("#g-x").onclick = fechar; $("#fundo").onclick = fechar;
+document.addEventListener("keydown", e => { if (e.key === "Escape") fechar(); });
+
+/* ======================= adicionar ======================= */
+async function adicionar(){
+  const url = $("#url").value.trim();
+  if (!url) return toast("Cole a URL da vaga.", true);
+  try {
+    const r = await api("api/vagas", {method:"POST", body:JSON.stringify({
+      url, empresa:$("#empresa").value.trim(), titulo:$("#titulo").value.trim()})});
+    ["#url","#empresa","#titulo"].forEach(s => $(s).value = "");
+    await carregar();
+    toast("Adicionada em Descoberta: " + (r.vaga.empresa || url));
+  } catch(e){
+    if (e.status === 409){ toast("Essa URL já está no quadro: " +
+      ((e.corpo.vaga||{}).empresa||""), true); await carregar(); }
+    else toast("Não adicionei: " + e.message, true);
+  }
+}
+$("#add").onclick = adicionar;
+$("#url").addEventListener("keydown", e => { if (e.key === "Enter") adicionar(); });
+$("#rec").onclick = carregar;
+
+/* ======================= perfil ======================= */
+const ROTULOS = {
+  nome_completo:"Nome completo", first_name:"Primeiro nome", last_name:"Sobrenome",
+  email:"E-mail", telefone_e164:"Telefone E.164", telefone_formatado:"Telefone formatado",
+  cidade:"Cidade", estado:"UF", pais:"País", fuso:"Fuso (ex: UTC-3)",
+  nacionalidade:"Nacionalidade", linkedin_url:"LinkedIn", portfolio:"Portfólio",
+  pretensao_brl_pj:"Pretensão BRL", regime_preferido:"Regime",
+};
+const campo = (sec, k, v, area) => {
+  const r = ROTULOS[k] || k.replace(/_/g," ");
+  const val = esc(v == null ? "" : v);
+  return area
+    ? `<label><span class="k">${esc(r)}</span><textarea data-s="${sec}" data-k="${esc(k)}"
+         placeholder="vazio faz o adaptador abortar em vez de inventar">${val}</textarea></label>`
+    : `<label><span class="k">${esc(r)}</span><input data-s="${sec}" data-k="${esc(k)}"
+         value="${val}"></label>`;
+};
+
+function renderPerfil(){
+  const p = PERFIL, ident = p.identidade || {}, resp = p.respostas_padrao || {};
+  const nunca = p.NUNCA_AFIRMAR || {}, cvs = p.curriculos || {}, anx = p.anexos || {};
+
+  const identKeys = Object.keys(ident).filter(k => !k.startsWith("_"));
+  const respKeys = Object.keys(resp).filter(k => !k.startsWith("_")).sort();
+  const nuncaKeys = Object.keys(nunca).filter(k => !k.startsWith("_")).sort();
+
+  let h = `
+  <div class="cartaoP">
+    <h2>Identidade</h2>
+    <p class="ajuda">Sai daqui todo dado que os adaptadores preenchem. Nunca versionado:
+      vive só em <code>data/perfil.json</code>. CPF não é exposto aqui de propósito.</p>
+    <div class="grid">${identKeys.map(k => campo("identidade", k, ident[k])).join("")}</div>
+  </div>
+
+  <div class="cartaoP">
+    <h2>Currículos <span class="n">${Object.keys(cvs).length} trilhas</span></h2>
+    <p class="ajuda">Cada trilha aponta para um arquivo em <code>curriculos/</code>.
+      Suba o PDF e escolha a trilha; o perfil passa a apontar para ele.</p>
+    <div class="lista">
+      ${Object.keys(cvs).map(k => `<div class="par">
+        <div class="rot">${esc(k)}<small>trilha</small></div>
+        <div>
+          <select data-s="curriculos" data-k="${esc(k)}" style="width:100%">
+            <option value="">(nenhum)</option>
+            ${(ARQ.curriculo||[]).map(a =>
+              `<option value="${esc(a.nome)}" ${a.nome===cvs[k]?"selected":""}>${esc(a.nome)} · ${a.kb} KB</option>`).join("")}
+          </select>
+        </div></div>`).join("")}
+    </div>
+    <div style="margin-top:13px">
+      <div class="solta" id="up-cv">Arraste um PDF aqui, ou clique para escolher
+        <input type="file" id="in-cv" accept=".pdf,.doc,.docx" hidden></div>
+    </div>
+  </div>
+
+  <div class="cartaoP">
+    <h2>Anexos</h2>
+    <p class="ajuda">Mistura arquivo e link de propósito: speedtest e portfólio são arquivo,
+      Vocaroo e Loom são URL. Digite a URL, ou suba o arquivo abaixo.</p>
+    <div class="lista">
+      ${Object.keys(anx).filter(k => !k.startsWith("_")).map(k => `<div class="par">
+        <div class="rot">${esc(k)}</div>
+        <div><input data-s="anexos" data-k="${esc(k)}" value="${esc(anx[k]||"")}"></div>
+      </div>`).join("")}
+    </div>
+    <div style="margin-top:13px">
+      <div class="solta" id="up-an">Arraste um arquivo de anexo aqui (PDF ou imagem)
+        <input type="file" id="in-an" accept=".pdf,.png,.jpg,.jpeg,.webp" hidden></div>
+      ${(ARQ.anexo||[]).length ? `<div class="lista" style="margin-top:11px">` +
+        (ARQ.anexo||[]).map(a => `<div class="arq"><span class="nm">${esc(a.nome)}</span>
+          <span class="kb">${a.kb} KB</span></div>`).join("") + `</div>` : ""}
+    </div>
+  </div>
+
+  <div class="cartaoP">
+    <h2>Nunca afirmar <span class="n">${nuncaKeys.length} itens</span></h2>
+    <p class="ajuda">A trava de integridade. Se a vaga exige um destes como requisito
+      obrigatório, ela não deveria ser enviada.</p>
+    <div class="lista">${nuncaKeys.map(k => `<div class="par">
+      <div class="rot">${esc(k.replace(/_/g," "))}</div>
+      <div><input data-s="NUNCA_AFIRMAR" data-k="${esc(k)}" value="${esc(nunca[k]||"")}"></div>
+    </div>`).join("")}</div>
+  </div>
+
+  <div class="cartaoP">
+    <h2>Banco de respostas <span class="n">${respKeys.length} chaves</span></h2>
+    <p class="ajuda">Cada chave responde a uma pergunta que formulário faz.
+      <b>Deixar vazio é intencional</b>: o adaptador aborta e mostra a pergunta literal,
+      em vez de inventar resposta que você não sustenta na entrevista.</p>
+    <div class="lista">${respKeys.map(k => `<div class="par">
+      <div class="rot">${esc(k.replace(/_/g," "))}</div>
+      <div><textarea data-s="respostas_padrao" data-k="${esc(k)}"
+        placeholder="vazio = adaptador aborta">${esc(resp[k]||"")}</textarea></div>
+    </div>`).join("")}</div>
+  </div>
+
+  <div class="barra">
+    <button class="b" id="salvar">Salvar perfil</button>
+    <button class="b g" id="recarregarP">Descartar e recarregar</button>
+    <span style="font-size:11.5px;color:var(--dim)">grava em data/perfil.json</span>
+  </div>`;
+  $("#perfil-corpo").innerHTML = h;
+
+  $("#salvar").onclick = salvarPerfil;
+  $("#recarregarP").onclick = carregarPerfil;
+  ligarUpload("up-cv", "in-cv", "curriculo");
+  ligarUpload("up-an", "in-an", "anexo");
+}
+
+function ligarUpload(zonaId, inputId, tipo){
+  const z = $("#"+zonaId), i = $("#"+inputId);
+  z.onclick = () => i.click();
+  i.onchange = () => i.files[0] && subir(i.files[0], tipo);
+  ["dragenter","dragover"].forEach(ev => z.addEventListener(ev, e => {
+    e.preventDefault(); z.classList.add("sobre"); }));
+  ["dragleave","drop"].forEach(ev => z.addEventListener(ev, e => {
+    e.preventDefault(); z.classList.remove("sobre"); }));
+  z.addEventListener("drop", e => {
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) subir(f, tipo);
+  });
+}
+
+async function subir(arquivo, tipo){
+  const fd = new FormData();
+  fd.append("tipo", tipo); fd.append("arquivo", arquivo);
+  try {
+    const r = await fetch(comKey("api/upload"), {method:"POST", body:fd});
+    const c = await r.json();
+    if (!r.ok) throw new Error(c.detail || c.erro || ("HTTP " + r.status));
+    toast("Subiu: " + c.arquivo);
+    await carregarPerfil();
+  } catch(e){ toast("Upload falhou: " + e.message, true); }
+}
+
+async function salvarPerfil(){
+  const corpo = {identidade:{}, respostas_padrao:{}, NUNCA_AFIRMAR:{}, curriculos:{}, anexos:{}};
+  document.querySelectorAll("#perfil-corpo [data-s]").forEach(el => {
+    const s = el.dataset.s, k = el.dataset.k;
+    if (corpo[s]) corpo[s][k] = el.value;
+  });
+  try {
+    await api("api/perfil", {method:"PUT", body:JSON.stringify(corpo)});
+    toast("Perfil salvo.");
+    await carregarPerfil();
+  } catch(e){ toast("Não salvei: " + e.message, true); }
+}
+
+async function carregarPerfil(){
+  try {
+    [PERFIL, ARQ] = await Promise.all([api("api/perfil"), api("api/arquivos")]);
+    renderPerfil();
+  } catch(e){ toast("Falha no perfil: " + e.message, true); }
+}
+
+/* ======================= abas ======================= */
+function aba(qual){
+  const q = qual === "q";
+  $("#tab-q").classList.toggle("on", q);
+  $("#tab-p").classList.toggle("on", !q);
+  $("#quadro").classList.toggle("off", !q);
+  $("#perfil").classList.toggle("on", !q);
+  $("#entrada").style.display = q ? "" : "none";
+  $("#funil").style.display = q ? "" : "none";
+  if (!q && !PERFIL) carregarPerfil();
+  history.replaceState(null, "", location.pathname + location.search + (q ? "" : "#perfil"));
+}
+$("#tab-q").onclick = () => aba("q");
+$("#tab-p").onclick = () => aba("p");
+
+carregar().then(() => { if (location.hash === "#perfil") aba("p"); });
+</script>
+</body>
+</html>

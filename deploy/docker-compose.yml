@@ -1,0 +1,11 @@
+services:
+  esteira:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: esteira-vagas
+    restart: unless-stopped
+    volumes:
+      - ../data:/app/data          # seu dado fica no host, nao na imagem
+    ports:
+      - "127.0.0.1:8099:8099"      # SO' localhost. Publicar e' papel do nginx na frente.

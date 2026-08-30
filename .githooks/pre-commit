@@ -1,0 +1,68 @@
+#!/bin/sh
+# Bloqueia commit com credencial ou dado pessoal.
+#
+# Existe porque este repo e' PUBLICO. Uma senha hardcoded ja' chegou a entrar aqui uma vez
+# e so' nao vazou porque foi pega antes do primeiro push. Bot varre repo publico em minutos.
+#
+# Instalar:  git config core.hooksPath .githooks
+# Pular (so' se souber o que esta fazendo):  git commit --no-verify
+
+falhou=0
+
+# arquivos que estao entrando no commit
+arquivos=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$arquivos" ] && exit 0
+
+for f in $arquivos; do
+  [ -f "$f" ] || continue
+  # o proprio hook contem os padroes de deteccao; ignorar para nao se autobloquear
+  case "$f" in .githooks/*) continue ;; esac
+
+  # 1. credencial atribuida a variavel
+  if git show ":$f" 2>/dev/null | grep -qiE "(senha|password|passwd|token|secret|api_?key) *[:=] *[\"'][A-Za-z0-9!@#$%^&*_.-]{10,}"; then
+    echo "BLOQUEADO  $f  -> parece ter credencial hardcoded"
+    falhou=1
+  fi
+
+  # 2. chave privada
+  if git show ":$f" 2>/dev/null | grep -q -- "-----BEGIN .*PRIVATE KEY-----"; then
+    echo "BLOQUEADO  $f  -> chave privada"
+    falhou=1
+  fi
+
+  # 3. dado pessoal brasileiro: CPF formatado e telefone com DDD
+  if git show ":$f" 2>/dev/null | grep -qE "[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}"; then
+    echo "BLOQUEADO  $f  -> parece ter CPF"
+    falhou=1
+  fi
+  # Telefone. A v1 deste hook so' casava digito colado ([0-9]{2}9[0-9]{8}) e por isso
+  # deixou "+55 DD 9NNNN-NNNN" entrar em dois adaptadores sem ninguem ver. A v2 aceitou
+  # hifen mas ficou larga e bloqueou o proprio arquivo de exemplo e um id de pixel.
+  #
+  # v3, tres condicoes: o numero precisa estar FORMATADO como humano escreve (com +55,
+  # com parenteses, ou com hifen), digito repetido oito vezes e' placeholder, e linha ou
+  # arquivo que se anuncia como exemplo nao conta. Numero real nao mora em linha "Ex:".
+  case "$f" in
+    *.example.*|*example*.json) ;;
+    *)
+      if git show ":$f" 2>/dev/null \
+         | grep -v -iE "(^|[^a-z])(ex|exemplo|example)[:.]" \
+         | grep -oE "(\+55[ -]?[0-9]{2}|\([0-9]{2}\))[ -]?9[0-9]{4}[ -]?[0-9]{4}|9[0-9]{4}-[0-9]{4}" \
+         | tr -cd "0-9\n" \
+         | grep -vE "([0-9])\1{7}" \
+         | grep -q .; then
+        echo "BLOQUEADO  $f  -> parece ter telefone com DDD"
+        falhou=1
+      fi
+      ;;
+  esac
+done
+
+if [ "$falhou" = "1" ]; then
+  echo ""
+  echo "Nada foi commitado. Tire o dado do codigo e use variavel de ambiente."
+  echo "Se for falso positivo:  git commit --no-verify"
+  exit 1
+fi
+
+exit 0

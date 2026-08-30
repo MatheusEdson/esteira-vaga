@@ -1,0 +1,70 @@
+# ---------------------------------------------------------------------------
+# DADOS PESSOAIS. Nunca versionar.
+# O que torna este repo whitelabel: o codigo e compartilhado, o perfil e' de
+# cada pessoa. Quem clona preenche o proprio data/perfil.json a partir do
+# perfil.example.json e nada dele volta para o git.
+# ---------------------------------------------------------------------------
+# Nega TUDO em data/ e libera so' o marcador. Assim qualquer arquivo de dado NOVO
+# (transicoes.jsonl, cache, export) fica protegido por padrao, sem precisar lembrar
+# de adicionar aqui. Foi o que pegou o transicoes.jsonl antes do primeiro commit.
+data/*
+!data/.gitkeep
+.env
+.env.*
+!.env.example
+
+# CVs, cartas e portfolio: documento pessoal com endereco, telefone e CPF
+curriculos/
+*.pdf
+
+# Respostas dissertativas ja escritas para vaga especifica
+respostas/
+COLAR-*.md
+
+# ---------------------------------------------------------------------------
+# Ruido de execucao
+# ---------------------------------------------------------------------------
+_tmp/
+_logs/
+tmp/
+logs/
+*.log
+
+# Perfis de navegador do Playwright: pesados e cheios de cookie de sessao
+edge-profile-*/
+playwright-artifacts*/
+playwright_chromiumdev_profile*/
+*.png
+*.jpg
+*.webp
+!docs/img/*.png
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Editor / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# chave do deploy: gerada por instancia, nunca versionada
+_deploy-chave.txt
+esteira-full.tgz
+_pack/
+
+log/
+
+# tabela real de mascaramento: lista o que deve ser escondido
+tools/redacao/mapa.local.js

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "apify": {
+      "type": "sse",
+      "url": "http://localhost:3006/sse"
+    }
+  }
+}

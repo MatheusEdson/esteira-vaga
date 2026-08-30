@@ -1,0 +1,46 @@
+# Agendamento da esteira. Copie o que interessa para o seu crontab.
+#
+# A REGRA QUE DEFINE O QUE ENTRA AQUI:
+#   pode ir para cron o que le API com credencial propria.
+#   NAO vai para cron o que dirige navegador logado numa plataforma.
+#
+# Por que. Um cron roda sozinho, sem ninguem para resolver um desafio de bot. E' exatamente
+# a condicao em que a deteccao ganha. Na Upwork, todo caminho em que a automacao lancava o
+# browser terminou em loop infinito de checkbox, e o mesmo IP passou de primeira num browser
+# aberto a mao. LinkedIn e a maioria dos ATS sao mais agressivos ainda, e o custo de errar
+# nao e' um erro no log: e' a conta suspensa, com o historico de candidaturas junto.
+#
+# Descoberta de vaga NAO precisa de navegador. LinkedIn, Indeed, Glassdoor e os ATS mandam
+# alerta por e-mail. A esteira ja le e-mail. A vaga chega sozinha; o que faltava era separar
+# ela do ruido, e e' isso que o classificador faz.
+
+SHELL=/bin/bash
+TZ=America/Sao_Paulo
+
+# ---------------------------------------------------------------- SEGURO ----
+
+# Esteira de e-mail: sync incremental + classificacao + alerta.
+# Le a Gmail API com escopo readonly. Nao abre navegador, nao loga em lugar nenhum.
+# `flock` evita dois ciclos se sobrepondo e abrirem duas conexoes no banco.
+*/15 * * * * flock -n /tmp/esteira.lock /caminho/do/repo/scripts/cron-esteira.sh
+
+# Reauditoria semanal do padrao da caixa. Mostra se apareceu remetente novo que virou
+# ruido, ou ATS novo que estava sendo perdido. Domingo de manha.
+0 9 * * 0 cd /caminho/do/repo && ./venv/bin/python tools/esteira/gmail_vagas.py tudo 7 >> log/padrao.log 2>&1
+
+# ------------------------------------------------------- SO' SE VOCE OLHAR ----
+
+# Checagem de vagas salvas (a vaga ainda existe? virou login-only? pede video?).
+# Isso ABRE NAVEGADOR. Agende so' se voce estiver na maquina para resolver um desafio,
+# e em volume baixo. Uma vez por dia, poucas URLs, nunca em rajada.
+# 0 10 * * 1-5 cd /caminho/do/repo && ./venv/bin/python core/checar_vagas.py $(cat data/urls-para-checar.txt)
+
+# ------------------------------------------------------------ NAO FACA ----
+#
+# Nada aqui deve virar cron:
+#   - raspar busca de vaga do LinkedIn logado
+#   - aplicar automaticamente em vaga nenhuma
+#   - qualquer coisa que aperte "enviar" sem uma pessoa olhando
+#
+# O primeiro te custa a conta. O terceiro te custa a reputacao com um cliente, que e' pior,
+# porque conta nova se faz e reputacao nao.
