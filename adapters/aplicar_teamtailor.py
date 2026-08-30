@@ -9,16 +9,9 @@ Uso:
   python aplicar_teamtailor.py <url-da-vaga> --cv paid_seo --submit
 """
 import sys, os, re
-import sys as _sys, os as _os
-_d = _os.path.dirname(_os.path.abspath(__file__))
-for _c in (_d, _os.path.dirname(_d)):
-    if _c not in _sys.path: _sys.path.insert(0, _c)
-from nav import sync_playwright   # patchright endurecido, ver nav.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.bootstrap import PERFIL, cv, anexo, tmp, sync_playwright
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
-PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv, anexo as _anexo
 ID, RESP, DELIC = PERFIL["identidade"], PERFIL["respostas_padrao"], PERFIL["respostas_delicadas"]
 
 # ------------------------------------------------------------------ argumentos
@@ -34,8 +27,8 @@ if "--cv" in sys.argv:
 if "--salario" in sys.argv:
     PERFIL["respostas_padrao"]["expected_salary_usd_month"] = \
         sys.argv[sys.argv.index("--salario") + 1]
-CV = _cv(trilha)
-SPEED = _anexo("speedtest")
+CV = cv(trilha)
+SPEED = anexo("speedtest")
 for f in (CV, SPEED):
     if not os.path.exists(f):
         raise SystemExit(f"ERRO: nao achei {f}")
@@ -269,7 +262,7 @@ with sync_playwright() as p:
 
     slug = re.sub(r"[^a-z0-9]+", "-", URL.split("/jobs/")[-1].lower())[:50]
     pg.locator("section.overlay").first.screenshot(
-        path=os.path.join(BASE, "_tmp", f"form-{slug}.png"))
+        path=tmp(f"form-{slug}.png"))
 
     if DO_SUBMIT:
         print("\n[8] ENVIANDO")
@@ -284,7 +277,7 @@ with sync_playwright() as p:
             print("   >>> ENVIADA e confirmada.")
         else:
             print("   >>> VERIFICAR MANUALMENTE, url inesperada.")
-        pg.screenshot(path=os.path.join(BASE, "_tmp", f"enviado-{slug}.png"))
+        pg.screenshot(path=tmp(f"enviado-{slug}.png"))
     else:
         print("\n[8] DRY-RUN: nada enviado. Use --submit.")
 

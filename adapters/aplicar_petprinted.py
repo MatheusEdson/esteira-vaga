@@ -11,47 +11,10 @@ experiencia) vem do data/perfil.json, que fica fora do git. Este arquivo guarda 
 a mecanica do formulario.
 """
 import sys, os, re, time
-import io
-import sys as _sys, os as _os
-_d = _os.path.dirname(_os.path.abspath(__file__))
-for _c in (_d, _os.path.dirname(_d)):
-    if _c not in _sys.path: _sys.path.insert(0, _c)
-from nav import sync_playwright   # patchright endurecido, ver nav.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.bootstrap import ID, do_perfil, bloco, tmp, sync_playwright
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
-PERFIL = _carregar_perfil()
 
-def bloco(chave):
-    """Le uma resposta dissertativa de respostas/petprinted.md.
-
-    As respostas nao vivem no codigo porque carregam metrica de empregador e de cliente.
-    respostas/ e gitignored. Sem o arquivo, ABORTA em vez de enviar formulario vazio.
-    """
-    from core.perfil import respostas_md
-    caminho = respostas_md("petprinted.md")
-    if not os.path.exists(caminho):
-        raise SystemExit(
-            "ERRO: nao achei %s\n"
-            "Crie o arquivo com uma secao por resposta:\n"
-            "  ## NOME_DA_CHAVE\n  seu texto aqui\n"
-            "Ver docs/respostas-formato.md." % caminho)
-    txt = io.open(caminho, encoding="utf-8").read()
-    m = re.search(r"^##\s+" + re.escape(chave) + r"\s*$(.*?)(?=^##\s|\Z)",
-                  txt, re.M | re.S)
-    if not m or not m.group(1).strip():
-        raise SystemExit("ERRO: falta a secao '## %s' em %s" % (chave, caminho))
-    return m.group(1).strip()
-
-ID = PERFIL["identidade"]
-
-def do_perfil(chave, secao="respostas_padrao"):
-    """Le do perfil e ABORTA se estiver vazio. Ver aplicar_contractorliberty.py."""
-    v = PERFIL.get(secao, {}).get(chave)
-    v = str(v).strip() if v is not None else ""
-    if not v:
-        raise SystemExit("ERRO: preencha %s.%s no data/perfil.json" % (secao, chave))
-    return v
 
 
 URL = "https://jobs.petprinted.de/jobs/senior-performance-marketing-meta"
@@ -197,7 +160,7 @@ with sync_playwright() as p:
           .map(e => e.type || e.tagName)""")
     print("\n   campos ainda vazios:", vazios or "nenhum")
 
-    pg.screenshot(path=os.path.join(BASE, "_tmp", "petprinted-preenchido.png"), full_page=True)
+    pg.screenshot(path=tmp("petprinted-preenchido.png"), full_page=True)
 
     if JANELA:
         print("\nJANELA ABERTA. Confira e clique em Submit application.")
@@ -229,7 +192,7 @@ with sync_playwright() as p:
             for t in rede:
                 if not any(x in t[2] for x in ("google", "facebook", "sentry", "hotjar")):
                     print("   ", t)
-            pg.screenshot(path=os.path.join(BASE, "_tmp", "petprinted-enviado.png"), full_page=True)
+            pg.screenshot(path=tmp("petprinted-enviado.png"), full_page=True)
     else:
         print("\n[7] DRY-RUN: nada enviado.")
 

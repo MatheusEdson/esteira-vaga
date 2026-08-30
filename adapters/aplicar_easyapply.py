@@ -7,13 +7,10 @@ Dry-run por padrao: abre o modal, percorre as etapas SEM enviar, imprime todos o
 campos e perguntas de cada etapa e tira screenshot. O envio real so acontece com
 --submit, e mesmo assim para se aparecer campo obrigatorio desconhecido.
 """
-import sys, os, re, unicodedata
-import sys as _sys, os as _os
-_d = _os.path.dirname(_os.path.abspath(__file__))
-for _c in (_d, _os.path.dirname(_d)):
-    if _c not in _sys.path: _sys.path.insert(0, _c)
-from nav import sync_playwright   # patchright endurecido, ver nav.py
-
+import sys, os, re
+import unicodedata
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.bootstrap import PERFIL, ID, cv, tmp, sync_playwright
 
 def sem_acento(s):
     """Pergunta customizada do LinkedIn as vezes recusa nao-ASCII com
@@ -22,11 +19,6 @@ def sem_acento(s):
     n = unicodedata.normalize("NFD", s)
     return "".join(c for c in n if unicodedata.category(c) != "Mn")
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
-PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv
-ID = PERFIL["identidade"]
 
 if len(sys.argv) < 2:
     raise SystemExit(__doc__)
@@ -39,7 +31,7 @@ URL = f"https://www.linkedin.com/jobs/view/{JOB}/"
 CV = None
 if "--cv" in sys.argv:
     chave = sys.argv[sys.argv.index("--cv") + 1]
-    CV = _cv(chave)
+    CV = cv(chave)
 
 # respostas verdadeiras, todas ancoradas no perfil.json
 RESP = [
@@ -125,7 +117,7 @@ DUMP = """() => {
 
 with sync_playwright() as p:
     ctx = p.chromium.launch_persistent_context(
-        os.path.join(BASE, "_tmp", "edge-profile-linkedin"), channel="msedge",
+        tmp("edge-profile-linkedin"), channel="msedge",
         headless=True, viewport={"width": 1450, "height": 1100}, locale="en-US",
         )
     pg = ctx.new_page()
@@ -175,7 +167,7 @@ with sync_playwright() as p:
             print(f"\n    !! TRAVADO: a etapa {etapa} e' identica a uma anterior; "
                   f"'Avancar' nao valida. Campos visiveis estao todos preenchidos, "
                   f"logo o bloqueio e' invisivel no DOM.")
-            pg.screenshot(path=os.path.join(BASE, "_tmp", f"easyapply-{JOB}-travado.png"),
+            pg.screenshot(path=tmp(f"easyapply-{JOB}-travado.png"),
                           full_page=False)
             break
         assinaturas.append(assin)
@@ -274,11 +266,11 @@ with sync_playwright() as p:
             for c in faltando:
                 print(f"       - {c['label']}")
             print("    -> vai para fila.md. NAO enviando.")
-            pg.screenshot(path=os.path.join(BASE, "_tmp", f"easyapply-{JOB}-bloqueio.png"),
+            pg.screenshot(path=tmp(f"easyapply-{JOB}-bloqueio.png"),
                           full_page=False)
             break
 
-        pg.screenshot(path=os.path.join(BASE, "_tmp", f"easyapply-{JOB}-e{etapa}.png"),
+        pg.screenshot(path=tmp(f"easyapply-{JOB}-e{etapa}.png"),
                       full_page=False)
 
         # botao de avancar / revisar / enviar
@@ -302,7 +294,7 @@ with sync_playwright() as p:
                        "button:has-text('Submit application')").first.click()
             pg.wait_for_timeout(6000)
             print("    corpo:", pg.inner_text("body")[:220].replace("\n", " | "))
-            pg.screenshot(path=os.path.join(BASE, "_tmp", f"easyapply-{JOB}-enviado.png"),
+            pg.screenshot(path=tmp(f"easyapply-{JOB}-enviado.png"),
                           full_page=False)
             break
 

@@ -14,27 +14,10 @@ Notas de decisao:
     Google / Meta / LinkedIn / Programmatic, e Google + Meta ja satisfaz.
 """
 import sys, os, re, time
-import sys as _sys, os as _os
-_d = _os.path.dirname(_os.path.abspath(__file__))
-for _c in (_d, _os.path.dirname(_d)):
-    if _c not in _sys.path: _sys.path.insert(0, _c)
-from nav import sync_playwright   # patchright endurecido, ver nav.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.bootstrap import ID, do_perfil, cv, tmp, sync_playwright
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
-PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv
-
-
-def do_perfil(chave, secao="respostas_padrao"):
-    """Le do perfil e ABORTA se vazio. Ver aplicar_contractorliberty.py."""
-    v = PERFIL.get(secao, {}).get(chave)
-    v = str(v).strip() if v is not None else ""
-    if not v:
-        raise SystemExit("ERRO: preencha %s.%s no data/perfil.json" % (secao, chave))
-    return v
-ID = PERFIL["identidade"]
-CV = _cv("paid_seo")
+CV = cv("paid_seo")
 
 URL = "https://www.careers-page.com/talenthq/job/7XV78493"
 SUBMIT = "--submit" in sys.argv
@@ -194,10 +177,10 @@ with sync_playwright() as p:
         for t in rede:
             if not any(x in t[2] for x in ("google", "facebook", "sentry", "hotjar", "clarity")):
                 print("   ", t)
-        pg.screenshot(path=os.path.join(BASE, "_tmp", "talenthq-enviado.png"), full_page=True)
+        pg.screenshot(path=tmp("talenthq-enviado.png"), full_page=True)
     else:
         print("\n[8] DRY-RUN: nada enviado.")
-        pg.screenshot(path=os.path.join(BASE, "_tmp", "talenthq-dry.png"), full_page=True)
+        pg.screenshot(path=tmp("talenthq-dry.png"), full_page=True)
 
     ctx.close()
     b.close()

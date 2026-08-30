@@ -5,18 +5,9 @@
 Dry-run por padrao: preenche, imprime o estado de cada campo e nao envia.
 """
 import sys, os, re
-import sys as _sys, os as _os
-_d = _os.path.dirname(_os.path.abspath(__file__))
-for _c in (_d, _os.path.dirname(_d)):
-    if _c not in _sys.path: _sys.path.insert(0, _c)
-from nav import sync_playwright   # patchright endurecido, ver nav.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.bootstrap import ID, RESP, cv, tmp, sync_playwright
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
-PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv
-ID = PERFIL["identidade"]
-RESP = PERFIL["respostas_padrao"]
 
 VAGAS = {
     "nava": ("Nava · Backend Node.js Senior",
@@ -30,7 +21,7 @@ if len(sys.argv) < 2 or sys.argv[1] not in VAGAS:
     raise SystemExit(__doc__)
 chave = sys.argv[1]
 NOME, URL, CV_KEY = VAGAS[chave]
-CV = _cv(CV_KEY)
+CV = cv(CV_KEY)
 DO_SUBMIT = "--submit" in sys.argv
 
 with sync_playwright() as p:
@@ -141,7 +132,7 @@ with sync_playwright() as p:
     for l in labs:
         print("   -", l.replace("\n", " ")[:110])
 
-    pg.screenshot(path=os.path.join(BASE, "_tmp", f"geekhunter-{chave}.png"), full_page=True)
+    pg.screenshot(path=tmp(f"geekhunter-{chave}.png"), full_page=True)
 
     if DO_SUBMIT:
         print("\n[8] ENVIANDO")
@@ -160,7 +151,7 @@ with sync_playwright() as p:
             if ok:
                 break
         print("   URL:", pg.url)
-        pg.screenshot(path=os.path.join(BASE, "_tmp", f"geekhunter-{chave}-enviado.png"),
+        pg.screenshot(path=tmp(f"geekhunter-{chave}-enviado.png"),
                       full_page=True)
     else:
         print("\n[8] DRY-RUN: nada enviado.")

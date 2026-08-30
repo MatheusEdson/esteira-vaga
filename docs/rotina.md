@@ -1,9 +1,22 @@
-# Rotina de candidaturas · 2x por semana (segunda e quinta, manhã)
+# Rotina de candidaturas
+
+> Este documento e o PROCEDIMENTO que o agente executa quando o cron dispara, com as
+> decisoes que definem o comportamento dele e as medicoes que levaram a cada uma.
+>
+> Ele guarda achado datado e correcao de achado anterior de proposito: a data importa
+> porque plataforma de vaga muda, e um veredito de tres meses atras pode ter deixado
+> de valer. Manter a correcao visivel ao lado do erro e o que impede alguem (inclusive
+> o autor) de reusar uma conclusao vencida.
+
+Cadencia sugerida: duas vezes por semana, de manha.
 
 Procedimento que o Claude executa quando o cron dispara. `perfil.json` é a única fonte de verdade
 sobre o que pode ser afirmado. `enviadas.json` impede candidatura repetida.
 
-## Decisões do dono do perfil que definem o comportamento
+## Decisões que definem o comportamento
+
+Estas sao escolhas de quem opera a esteira, nao padroes do software. Troque
+conforme o seu apetite de risco.
 - **Auto-envio**, sem revisão prévia de shortlist. O filtro do `perfil.json` é a única salvaguarda.
 - **Easy Apply do LinkedIn incluído**, usando o perfil de browser persistente em `data/_perfil-edge` (ou o caminho em `PERFIL_EDGE`).
   Ele logou na mão uma vez. Nunca pedir nem armazenar senha. Se a sessão caiu, parar e avisar.
@@ -117,7 +130,10 @@ qual ele não é elegível.
 apenas a query BR de gestor de tráfego, como fonte secundária de baixa prioridade. Não gastar mais
 tempo explorando essa fonte; o LinkedIn produziu 100% das 14 candidaturas.
 
-### ⚠️ CORRIGIDO EM 18/08: o veredito acima estava ERRADO
+### ⚠️ Correção (18/08): o veredito acima estava errado
+
+Fica registrado em vez de reescrito. Saber que a conclusao anterior caiu, e por
+que, vale mais do que uma pagina que finge nunca ter errado.
 
 O o dono do perfil foi impactado por **dois anúncios de vaga de media buyer no Instagram** e me trouxe as
 landing pages. Refiz a busca e a fonte funciona: **eu tinha buscado com os termos errados.**

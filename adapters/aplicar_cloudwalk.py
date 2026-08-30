@@ -4,18 +4,9 @@
   python aplicar_cloudwalk.py --submit   -> envia
 """
 import sys, os, re
-import sys as _sys, os as _os
-_d = _os.path.dirname(_os.path.abspath(__file__))
-for _c in (_d, _os.path.dirname(_d)):
-    if _c not in _sys.path: _sys.path.insert(0, _c)
-from nav import sync_playwright   # patchright endurecido, ver nav.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.bootstrap import ID, RESP, resposta, tmp, sync_playwright
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
-PERFIL = _carregar_perfil()
-from core.perfil import respostas_md as _resp
-ID = PERFIL["identidade"]
-RESP = PERFIL["respostas_padrao"]
 
 
 def obrigatorio(chave):
@@ -31,7 +22,7 @@ URL = "https://www.cloudwalk.io/jobs-positions/technical-seo-ai-growth-builder-a
 
 def secao(md, titulo):
     """Extrai uma secao do respostas-cloudwalk.md pelo cabecalho."""
-    txt = open(_resp(md), encoding="utf-8").read()
+    txt = open(resposta(md), encoding="utf-8").read()
     blocos = re.split(r"\n## ", txt)
     for b in blocos:
         if b.strip().startswith(titulo):
@@ -115,7 +106,7 @@ with sync_playwright() as p:
     for k, v in estado.items():
         print(f"   {k:>10}: {v}")
 
-    pg.screenshot(path=os.path.join(BASE, "_tmp", "cloudwalk-preenchido.png"), full_page=True)
+    pg.screenshot(path=tmp("cloudwalk-preenchido.png"), full_page=True)
 
     if DO_SUBMIT:
         print("\n[6] ENVIANDO")
@@ -128,7 +119,7 @@ with sync_playwright() as p:
                   if re.search(r"thank|success|received|sucesso|obrigad|error|erro|try again|required", l, re.I)]
         print("   URL:", pg.url)
         print("   sinais:", sinais[:10])
-        pg.screenshot(path=os.path.join(BASE, "_tmp", "cloudwalk-enviado.png"), full_page=True)
+        pg.screenshot(path=tmp("cloudwalk-enviado.png"), full_page=True)
     else:
         print("\n[6] DRY-RUN: nada enviado. Use --submit.")
 

@@ -14,55 +14,12 @@ Decisoes registradas:
     neutro que o CV dele sustenta.
 """
 import sys, os, re, time
-import io
-import sys as _sys, os as _os
-_d = _os.path.dirname(_os.path.abspath(__file__))
-for _c in (_d, _os.path.dirname(_d)):
-    if _c not in _sys.path: _sys.path.insert(0, _c)
-from nav import sync_playwright   # patchright endurecido, ver nav.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.bootstrap import ID, do_perfil, cv, bloco, tmp, sync_playwright
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
-PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv
 
-def bloco(chave):
-    """Le uma resposta dissertativa de respostas/deel_atomchat.md.
 
-    As respostas nao vivem no codigo porque carregam metrica de empregador e de cliente.
-    respostas/ e gitignored. Sem o arquivo, ABORTA em vez de enviar formulario vazio.
-    """
-    from core.perfil import respostas_md
-    caminho = respostas_md("deel_atomchat.md")
-    if not os.path.exists(caminho):
-        raise SystemExit(
-            "ERRO: nao achei %s\n"
-            "Crie o arquivo com uma secao por resposta:\n"
-            "  ## NOME_DA_CHAVE\n  seu texto aqui\n"
-            "Ver docs/respostas-formato.md." % caminho)
-    txt = io.open(caminho, encoding="utf-8").read()
-    m = re.search(r"^##\s+" + re.escape(chave) + r"\s*$(.*?)(?=^##\s|\Z)",
-                  txt, re.M | re.S)
-    if not m or not m.group(1).strip():
-        raise SystemExit("ERRO: falta a secao '## %s' em %s" % (chave, caminho))
-    return m.group(1).strip()
-
-ID = PERFIL["identidade"]
-
-def do_perfil(chave, secao="respostas_padrao"):
-    """Le do perfil e ABORTA se estiver vazio.
-
-    Existe porque estes adaptadores nasceram como script de uma candidatura so', com o
-    valor real digitado inline: pretensao, ultimo salario, empregador atual. Isso publica
-    a posicao de negociacao de quem usa o repo e trava o adaptador em uma pessoa so'.
-    Vazio aborta de proposito: melhor parar do que mandar numero errado."""
-    v = PERFIL.get(secao, {}).get(chave)
-    v = str(v).strip() if v is not None else ""
-    if not v:
-        raise SystemExit("ERRO: preencha %s.%s no data/perfil.json" % (secao, chave))
-    return v
-
-CV = _cv("gtm_engineer")
+CV = cv("gtm_engineer")
 
 URL = ("https://jobs.deel.com/atomchat/job-details/"
        "da6eaa1a-23f9-4a15-ac97-e32c2d865799/application")
@@ -345,7 +302,7 @@ with sync_playwright() as p:
           return out; }"""):
         print("   ", l)
 
-    pg.screenshot(path=os.path.join(BASE, "_tmp", "deel-atom-preenchido.png"), full_page=True)
+    pg.screenshot(path=tmp("deel-atom-preenchido.png"), full_page=True)
 
     if JANELA:
         print("\nJANELA ABERTA. Confira e clique em Apply.")
@@ -390,7 +347,7 @@ with sync_playwright() as p:
         for t in rede:
             if not any(x in t[2] for x in ("google", "sentry", "hotjar", "segment", "intercom")):
                 print("   ", t)
-        pg.screenshot(path=os.path.join(BASE, "_tmp", "deel-atom-enviado.png"), full_page=True)
+        pg.screenshot(path=tmp("deel-atom-enviado.png"), full_page=True)
     else:
         print("\n[7] DRY-RUN: nada enviado.")
 

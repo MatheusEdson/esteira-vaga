@@ -3,18 +3,10 @@
   python aplicar_floowi_connect.py [--submit]
 """
 import sys, os, re
-import sys as _sys, os as _os
-_d = _os.path.dirname(_os.path.abspath(__file__))
-for _c in (_d, _os.path.dirname(_d)):
-    if _c not in _sys.path: _sys.path.insert(0, _c)
-from nav import sync_playwright   # patchright endurecido, ver nav.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.bootstrap import ID, cv, tmp, sync_playwright
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
-PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv
-ID = PERFIL["identidade"]
-CV = _cv("web_seo")
+CV = cv("web_seo")
 URL = "https://floowi.na.teamtailor.com/connect"
 DO = "--submit" in sys.argv
 
@@ -67,7 +59,7 @@ with sync_playwright() as p:
 
     if not DO:
         print("\nDRY-RUN: nao cliquei em Continue.")
-        pg.screenshot(path=os.path.join(BASE, "_tmp", "floowi-connect.png"), full_page=True)
+        pg.screenshot(path=tmp("floowi-connect.png"), full_page=True)
         b.close(); raise SystemExit(0)
 
     # o campo de e-mail so' existe DEPOIS do Continue: e' um wizard por etapas
@@ -103,7 +95,7 @@ with sync_playwright() as p:
         except Exception:
             pass
 
-    pg.screenshot(path=os.path.join(BASE, "_tmp", "floowi-connect-2.png"), full_page=True)
+    pg.screenshot(path=tmp("floowi-connect-2.png"), full_page=True)
     try:
         pg.locator("button[type=submit], input[type=submit]").last.click(timeout=8000)
         pg.wait_for_timeout(8000)
@@ -113,5 +105,5 @@ with sync_playwright() as p:
                           if re.search(r"thank|welcome|joined|success|verify", l, re.I)][:5])
     except Exception as e:
         print("submit final:", repr(e)[:60])
-    pg.screenshot(path=os.path.join(BASE, "_tmp", "floowi-connect-3.png"), full_page=True)
+    pg.screenshot(path=tmp("floowi-connect-3.png"), full_page=True)
     b.close()

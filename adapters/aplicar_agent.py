@@ -7,48 +7,19 @@ ingles e' um grupo de radios que compartilham o mesmo name, entao a selecao tem
 que ser pelo TEXTO do label; e ha 4 checkboxes de sim/nao.
 """
 import sys, os, re
-import sys as _sys, os as _os
-_d = _os.path.dirname(_os.path.abspath(__file__))
-for _c in (_d, _os.path.dirname(_d)):
-    if _c not in _sys.path: _sys.path.insert(0, _c)
-from nav import sync_playwright   # patchright endurecido, ver nav.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.bootstrap import ID, do_perfil, cv, anexo, resposta, bloco, tmp, sync_playwright
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
-PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv, anexo as _anexo, respostas_md as _resp
-ID = PERFIL["identidade"]
 
-def do_perfil(chave, secao="respostas_padrao"):
-    """Le do perfil e ABORTA se estiver vazio.
 
-    Existe porque estes adaptadores nasceram como script de uma candidatura so', com o
-    valor real digitado inline: pretensao, ultimo salario, empregador atual. Isso publica
-    a posicao de negociacao de quem usa o repo e trava o adaptador em uma pessoa so'.
-    Vazio aborta de proposito: melhor parar do que mandar numero errado."""
-    v = PERFIL.get(secao, {}).get(chave)
-    v = str(v).strip() if v is not None else ""
-    if not v:
-        raise SystemExit("ERRO: preencha %s.%s no data/perfil.json" % (secao, chave))
-    return v
-
-CV = _cv("web_seo")
-CARTA = _anexo("cover-letter-agent.pdf")
+CV = cv("web_seo")
+CARTA = anexo("cover-letter-agent.pdf")
 URL = "https://jobs.ashbyhq.com/Agent/5d684cff-64ee-4ed7-bbbf-838c48b8ccd1/application"
 DO_SUBMIT = "--submit" in sys.argv
 
-MD = _resp("respostas-agent-careers.md")
+MD = resposta("respostas-agent-careers.md")
 
 
-def bloco(titulo):
-    """Extrai o corpo de um bloco delimitado por linhas de '=' no .md."""
-    txt = open(MD, encoding="utf-8").read()
-    partes = re.split(r"={20,}\n", txt)
-    for i, p in enumerate(partes):
-        if p.strip().lower().startswith(titulo.lower()):
-            corpo = partes[i + 1] if i + 1 < len(partes) else ""
-            return corpo.split("---\nNOTA")[0].split("--- NOTA")[0].strip()
-    raise SystemExit(f"ERRO: bloco '{titulo}' nao encontrado em {MD}")
 
 
 CAMPOS = {
@@ -159,7 +130,7 @@ with sync_playwright() as p:
     if faltando:
         print(f"   >>> {len(faltando)} campo(s) vazio(s) no DOM. Nao envio assim.")
 
-    pg.screenshot(path=os.path.join(BASE, "_tmp", "agent-preenchido.png"), full_page=True)
+    pg.screenshot(path=tmp("agent-preenchido.png"), full_page=True)
 
     if DO_SUBMIT and faltando:
         print("\n[6] ABORTADO: campos vazios acima. Corrigir antes de enviar.")
@@ -180,7 +151,7 @@ with sync_playwright() as p:
             if ok or spam:
                 break
         print("   URL:", pg.url)
-        pg.screenshot(path=os.path.join(BASE, "_tmp", "agent-enviado.png"), full_page=True)
+        pg.screenshot(path=tmp("agent-enviado.png"), full_page=True)
     else:
         print("\n[6] DRY-RUN: nada enviado.")
 

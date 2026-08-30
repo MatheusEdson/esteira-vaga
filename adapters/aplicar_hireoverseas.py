@@ -6,36 +6,13 @@ Respostas de plataforma: Amazon PPC e Walmart e TikTok = NAO (ele nao tem).
 Meta e Google = SIM. Contribution margin/TACOS = "Somewhat" (TACOS e' jargao de Amazon).
 """
 import sys, os, re, time
-import sys as _sys, os as _os
-_d = _os.path.dirname(_os.path.abspath(__file__))
-for _c in (_d, _os.path.dirname(_d)):
-    if _c not in _sys.path: _sys.path.insert(0, _c)
-from nav import sync_playwright   # patchright endurecido, ver nav.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.bootstrap import ID, AN, do_perfil, cv, anexo, tmp, sync_playwright
 
 JANELA = "--janela" in sys.argv   # abre visivel e deixa o Matheus resolver o Turnstile
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
-PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv, anexo as _anexo
-ID = PERFIL["identidade"]
-
-def do_perfil(chave, secao="respostas_padrao"):
-    """Le do perfil e ABORTA se estiver vazio.
-
-    Existe porque estes adaptadores nasceram como script de uma candidatura so', com o
-    valor real digitado inline: pretensao, ultimo salario, empregador atual. Isso publica
-    a posicao de negociacao de quem usa o repo e trava o adaptador em uma pessoa so'.
-    Vazio aborta de proposito: melhor parar do que mandar numero errado."""
-    v = PERFIL.get(secao, {}).get(chave)
-    v = str(v).strip() if v is not None else ""
-    if not v:
-        raise SystemExit("ERRO: preencha %s.%s no data/perfil.json" % (secao, chave))
-    return v
-
-AN = PERFIL["anexos"]
-CV = _cv("paid_seo")
-PORTFOLIO = _anexo("portfolio_pdf")
+CV = cv("paid_seo")
+PORTFOLIO = anexo("portfolio_pdf")
 URL = "https://careers.hireoverseas.com/_/j/68E7F0BB61/apply/"
 DO_SUBMIT = "--submit" in sys.argv
 
@@ -150,7 +127,7 @@ with sync_playwright() as p:
             faltando.append(nome)
     print("   vazios:", faltando if faltando else "nenhum")
 
-    pg.screenshot(path=os.path.join(BASE, "_tmp", "ho-preenchido.png"), full_page=True)
+    pg.screenshot(path=tmp("ho-preenchido.png"), full_page=True)
 
     if JANELA:
         print("\n" + "=" * 76)
@@ -186,7 +163,7 @@ with sync_playwright() as p:
             if ok:
                 break
         print("   URL:", pg.url)
-        pg.screenshot(path=os.path.join(BASE, "_tmp", "ho-enviado.png"), full_page=True)
+        pg.screenshot(path=tmp("ho-enviado.png"), full_page=True)
     else:
         print("\n[7] DRY-RUN: nada enviado.")
 

@@ -9,52 +9,10 @@ Regras: nada aqui afirma o que nao esta no perfil.json.
   Salario = respostas_padrao.expected_salary_usd_month do perfil
 """
 import sys, os, re, time
-import io
-import sys as _sys, os as _os
-_d = _os.path.dirname(_os.path.abspath(__file__))
-for _c in (_d, _os.path.dirname(_d)):
-    if _c not in _sys.path: _sys.path.insert(0, _c)
-from nav import sync_playwright   # patchright endurecido, ver nav.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.bootstrap import PERFIL, ID, do_perfil, bloco, tmp, sync_playwright
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
-PERFIL = _carregar_perfil()
 
-def bloco(chave):
-    """Le uma resposta dissertativa de respostas/contractorliberty.md.
-
-    As respostas nao vivem no codigo porque carregam metrica de empregador e de cliente.
-    respostas/ e gitignored. Sem o arquivo, ABORTA em vez de enviar formulario vazio.
-    """
-    from core.perfil import respostas_md
-    caminho = respostas_md("contractorliberty.md")
-    if not os.path.exists(caminho):
-        raise SystemExit(
-            "ERRO: nao achei %s\n"
-            "Crie o arquivo com uma secao por resposta:\n"
-            "  ## NOME_DA_CHAVE\n  seu texto aqui\n"
-            "Ver docs/respostas-formato.md." % caminho)
-    txt = io.open(caminho, encoding="utf-8").read()
-    m = re.search(r"^##\s+" + re.escape(chave) + r"\s*$(.*?)(?=^##\s|\Z)",
-                  txt, re.M | re.S)
-    if not m or not m.group(1).strip():
-        raise SystemExit("ERRO: falta a secao '## %s' em %s" % (chave, caminho))
-    return m.group(1).strip()
-
-ID = PERFIL["identidade"]
-
-def do_perfil(chave, secao="respostas_padrao"):
-    """Le do perfil e ABORTA se estiver vazio.
-
-    Existe porque estes adaptadores nasceram como script de uma candidatura so', com o
-    valor real digitado inline: pretensao, ultimo salario, empregador atual. Isso publica
-    a posicao de negociacao de quem usa o repo e trava o adaptador em uma pessoa so'.
-    Vazio aborta de proposito: melhor parar do que mandar numero errado."""
-    v = PERFIL.get(secao, {}).get(chave)
-    v = str(v).strip() if v is not None else ""
-    if not v:
-        raise SystemExit("ERRO: preencha %s.%s no data/perfil.json" % (secao, chave))
-    return v
 
 AN = PERFIL["anexos"]
 
@@ -294,12 +252,12 @@ with sync_playwright() as p:
     for l in vazios:
         print("     VAZIO:", l)
 
-    pg.screenshot(path=os.path.join(BASE, "_tmp", "cl-preenchido.png"), full_page=True)
+    pg.screenshot(path=tmp("cl-preenchido.png"), full_page=True)
 
     if JANELA:
         # Instrumentado: o clique e dele, a leitura e minha. Grava veredito num arquivo que
         # pode ser lido de fora enquanto a janela segue aberta.
-        STATUS = os.path.join(BASE, "_tmp", "cl-status.txt")
+        STATUS = tmp("cl-status.txt")
         rede = []
 
         def registra(tag, metodo_ou_status, url):
@@ -344,7 +302,7 @@ with sync_playwright() as p:
 
                 if ok and not enviado:
                     enviado = True
-                    pg.screenshot(path=os.path.join(BASE, "_tmp", "cl-clique-dele.png"),
+                    pg.screenshot(path=tmp("cl-clique-dele.png"),
                                   full_page=True)
                     escreve("ENVIADO DE VERDADE (surveys/submit %s)" % ok[-1],
                             "texto na tela: %s" % (msg.group(0) if msg else "(sem mensagem)"))
@@ -403,7 +361,7 @@ with sync_playwright() as p:
             print("   ", t)
         veredito = [t for t in rede if "leadconnector" in t[2] and "survey-event" not in t[2]]
         print("\n   endpoint de submissao real:", veredito if veredito else "NENHUM (nao submeteu)")
-        pg.screenshot(path=os.path.join(BASE, "_tmp", "cl-enviado.png"), full_page=True)
+        pg.screenshot(path=tmp("cl-enviado.png"), full_page=True)
     else:
         print("\n[8] DRY-RUN: nada enviado.")
 

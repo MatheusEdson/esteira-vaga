@@ -231,11 +231,11 @@ flowchart LR
 | `tools/esteira/` | Leitura de e-mail, classificação, alerta | `python tools/esteira/esteira.py cron` |
 | `adapters/` | 16 scripts: 6 por ATS, 10 por empresa | `python adapters/aplicar_<ats>.py` (sem `--submit` é dry-run) |
 | `nav.py` | Camada de navegação: sessão endurecida e o sandbox padrão | importado por todo adaptador |
-| `core/` | Perfil, estados, armazenamento, e o `recon.py` | importado, ou `python core/recon.py <url>` |
+| `core/` | `bootstrap.py` (o que todo adaptador importa), perfil, estados, armazenamento, `recon.py` | importado, ou `python core/recon.py <url>` |
 | `app/` | API FastAPI + Kanban das candidaturas | `uvicorn app.api.main:app` |
 | `tools/upwork/` | Pontuação de vaga e preenchimento de proposta | `python tools/upwork/pontuar.py <dataset>` |
 | `tools/redacao/` | Máscara de tela para gravar demo sem vazar cliente | cola no Console antes de gravar |
-| `tests/` | 10 testes das regras de classificação | `python -m pytest tests/ -q` |
+| `tests/` | 48 testes: classificação, caminhos, armazenamento, pontuação | `python -m pytest tests/ -q` |
 | `deploy/` | Docker, nginx, e a regra de agendamento | ver `deploy/crontab.example` |
 | `.githooks/` | Bloqueia credencial, CPF e telefone no commit | `git config core.hooksPath .githooks` |
 
@@ -264,6 +264,34 @@ devolve o mapa dos campos, com id, rótulo e tipo. O adaptador novo sai desse ma
 **Nenhum valor pessoal fica no código.** Pretensão, salário anterior, empregador atual,
 cidade: tudo vem de `data/perfil.json`, que é gitignored. Campo vazio **aborta** o
 adaptador em vez de inventar resposta, e isso é de propósito.
+
+### O que todo adaptador importa
+
+```python
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.bootstrap import PERFIL, ID, do_perfil, cv, anexo, bloco, tmp, sync_playwright
+```
+
+Antes, esse cabeçalho tinha ~18 linhas repetidas nos 16 adaptadores, com um `do_perfil()`
+idêntico em sete deles. Deu 26% de duplicação medida, e o custo não foi estético: quando o
+caminho do perfil estava errado, **o mesmo bug precisou ser corrigido em 17 arquivos**. Um
+lugar errado é um bug; dezessete lugares errados é uma política errada.
+
+As duas primeiras linhas continuam ali porque o repositório não é um pacote instalável: os
+adaptadores rodam como `python adapters/aplicar_x.py`. Empacotar resolveria, ao custo de
+reestruturar vinte arquivos por um ganho que nenhum usuário sente.
+
+### O teste que mais importa
+
+`tests/test_adaptadores_carregam.py` importa cada adaptador com o navegador substituído por
+um dublê e reprova em `NameError`, `TypeError`, `AttributeError` ou `ImportError`.
+
+Ele existe porque os 16 adaptadores já ficaram **100% mortos** com `FileNotFoundError`
+enquanto a suíte seguia verde: `compileall` passa, `pyflakes` passa, `pytest` passa, e nada
+funciona, porque um caminho errado só falha quando alguém executa. Depois disso, a extração
+do `bootstrap` quebrou cinco deles de novo com um erro de assinatura, que `pyflakes` também
+não pega. Duas vezes o mesmo tipo de furo, agora fechado.
 
 ---
 

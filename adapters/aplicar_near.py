@@ -7,18 +7,10 @@ A senha vem da variavel de ambiente NEAR_SENHA. Nunca fica no codigo, nunca no g
 de nenhuma outra conta dele.
 """
 import sys, os
-import sys as _sys, os as _os
-_d = _os.path.dirname(_os.path.abspath(__file__))
-for _c in (_d, _os.path.dirname(_d)):
-    if _c not in _sys.path: _sys.path.insert(0, _c)
-from nav import sync_playwright   # patchright endurecido, ver nav.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.bootstrap import ID, cv, tmp, sync_playwright
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
-PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv
-ID = PERFIL["identidade"]
-CV = _cv("web_seo")
+CV = cv("web_seo")
 URL = "https://jobs.hirewithnear.com/jobs/2708?src=brenda.lindenberg"
 SENHA = os.environ.get("NEAR_SENHA", "")  # nunca hardcoded: veja .env.example
 DO_SUBMIT = "--submit" in sys.argv
@@ -41,7 +33,7 @@ def dump(pg, tag):
 
 with sync_playwright() as p:
     ctx = p.chromium.launch_persistent_context(
-        os.path.join(BASE, "_tmp", "edge-profile-near"), channel="msedge", headless=True,
+        tmp("edge-profile-near"), channel="msedge", headless=True,
         viewport={"width": 1440, "height": 1100}, locale="en-US",
         accept_downloads=True)
     pg = ctx.pages[0] if ctx.pages else ctx.new_page()
@@ -98,7 +90,7 @@ with sync_playwright() as p:
                     if not DO_SUBMIT and any(w in rotulo.lower() for w in ("submit", "apply")):
                         print(f"\n[PAUSA] botao final '{rotulo}' encontrado. DRY-RUN, nao cliquei.")
                         dump(pg, "estado final do dry-run")
-                        pg.screenshot(path=os.path.join(BASE, "_tmp", "near-final.png"), full_page=True)
+                        pg.screenshot(path=tmp("near-final.png"), full_page=True)
                         ctx.close(); raise SystemExit(0)
                     print(f"[4.{passo}] clicando '{rotulo}'")
                     bt.click()
@@ -115,7 +107,7 @@ with sync_playwright() as p:
             break
 
     dump(pg, "ESTADO FINAL")
-    pg.screenshot(path=os.path.join(BASE, "_tmp", "near-final.png"), full_page=True)
+    pg.screenshot(path=tmp("near-final.png"), full_page=True)
     corpo = pg.inner_text("body").lower()
     for marca in ("application submitted", "thank you", "we received", "successfully applied",
                   "verify your email", "confirm your email"):

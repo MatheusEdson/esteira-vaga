@@ -82,13 +82,13 @@ class _ChromiumComSandbox:
     def __getattr__(self, nome):
         return getattr(self._real, nome)
 
-    def launch(self, **kw):
+    def launch(self, *a, **kw):
         kw.setdefault("chromium_sandbox", _SANDBOX)
-        return self._real.launch(**kw)
+        return self._real.launch(*a, **kw)
 
-    def launch_persistent_context(self, **kw):
+    def launch_persistent_context(self, *a, **kw):
         kw.setdefault("chromium_sandbox", _SANDBOX)
-        return self._real.launch_persistent_context(**kw)
+        return self._real.launch_persistent_context(*a, **kw)
 
 
 class _PlayComSandbox:

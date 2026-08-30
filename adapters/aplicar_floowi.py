@@ -9,41 +9,10 @@ Particularidades tratadas aqui:
   anti-spam. Preencher REPROVA a candidatura. Fica vazio de proposito.
 """
 import sys, os, re
-import io
-import sys as _sys, os as _os
-_d = _os.path.dirname(_os.path.abspath(__file__))
-for _c in (_d, _os.path.dirname(_d)):
-    if _c not in _sys.path: _sys.path.insert(0, _c)
-from nav import sync_playwright   # patchright endurecido, ver nav.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.bootstrap import ID, cv, bloco, tmp, sync_playwright
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
-PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv
-
-def bloco(chave):
-    """Le uma resposta dissertativa de respostas/floowi.md.
-
-    As respostas nao vivem no codigo porque carregam metrica de empregador e de cliente.
-    respostas/ e gitignored. Sem o arquivo, ABORTA em vez de enviar formulario vazio.
-    """
-    from core.perfil import respostas_md
-    caminho = respostas_md("floowi.md")
-    if not os.path.exists(caminho):
-        raise SystemExit(
-            "ERRO: nao achei %s\n"
-            "Crie o arquivo com uma secao por resposta:\n"
-            "  ## NOME_DA_CHAVE\n  seu texto aqui\n"
-            "Ver docs/respostas-formato.md." % caminho)
-    txt = io.open(caminho, encoding="utf-8").read()
-    m = re.search(r"^##\s+" + re.escape(chave) + r"\s*$(.*?)(?=^##\s|\Z)",
-                  txt, re.M | re.S)
-    if not m or not m.group(1).strip():
-        raise SystemExit("ERRO: falta a secao '## %s' em %s" % (chave, caminho))
-    return m.group(1).strip()
-
-ID = PERFIL["identidade"]
-CV = _cv("web_seo")
+CV = cv("web_seo")
 URL = "https://floowi.na.teamtailor.com/jobs/682828-senior-seo-strategist"
 DO_SUBMIT = "--submit" in sys.argv
 
@@ -163,7 +132,7 @@ with sync_playwright() as p:
         return e ? (e.value || '(vazio, correto)') : '(nao existe)'; }""")
     print("   honeypot full_email:", honey)
 
-    pg.screenshot(path=os.path.join(BASE, "_tmp", "floowi-preenchido.png"), full_page=True)
+    pg.screenshot(path=tmp("floowi-preenchido.png"), full_page=True)
 
     if DO_SUBMIT:
         print("\n[8] ENVIANDO")
@@ -181,7 +150,7 @@ with sync_playwright() as p:
             if ok:
                 break
         print("   URL:", pg.url)
-        pg.screenshot(path=os.path.join(BASE, "_tmp", "floowi-enviado.png"), full_page=True)
+        pg.screenshot(path=tmp("floowi-enviado.png"), full_page=True)
     else:
         print("\n[8] DRY-RUN: nada enviado.")
 

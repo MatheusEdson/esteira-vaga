@@ -7,18 +7,9 @@ Respostas de anos de experiencia definidas VAGA A VAGA abaixo, honestas.
 Se aparecer combobox obrigatorio sem resposta mapeada, ABORTA sem enviar.
 """
 import sys, os, re
-import sys as _sys, os as _os
-_d = _os.path.dirname(_os.path.abspath(__file__))
-for _c in (_d, _os.path.dirname(_d)):
-    if _c not in _sys.path: _sys.path.insert(0, _c)
-from nav import sync_playwright   # patchright endurecido, ver nav.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.bootstrap import ID, RESP, cv, tmp, sync_playwright
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
-PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv
-ID = PERFIL["identidade"]
-RESP = PERFIL["respostas_padrao"]
 CIDADE_UF = "%s, %s" % (ID["cidade"], ID["estado"])
 
 VAGAS = {
@@ -97,7 +88,7 @@ if len(sys.argv) < 2 or sys.argv[1] not in VAGAS:
 chave = sys.argv[1]
 V = VAGAS[chave]
 DO_SUBMIT = "--submit" in sys.argv
-CV = _cv(V["cv"])
+CV = cv(V["cv"])
 
 
 def combo(pg, input_id, valor, primeira=False):
@@ -253,7 +244,7 @@ with sync_playwright() as p:
         print("=" * 74)
         ctx.close(); b.close(); raise SystemExit(2)
 
-    pg.screenshot(path=os.path.join(BASE, "_tmp", f"gh-{chave}-preenchido.png"), full_page=True)
+    pg.screenshot(path=tmp(f"gh-{chave}-preenchido.png"), full_page=True)
 
     if DO_SUBMIT:
         print("\n[6] ENVIANDO")
@@ -268,7 +259,7 @@ with sync_playwright() as p:
         # O codigo nao da' para automatizar: espera o Matheus colar num arquivo.
         precisa_codigo = "verification code was sent" in pg.inner_text("body").lower()
         if precisa_codigo:
-            arq = os.path.join(BASE, "_tmp", f"codigo-{chave}.txt")
+            arq = tmp(f"codigo-{chave}.txt")
             if os.path.exists(arq):
                 os.remove(arq)
             print("\n" + "=" * 74)
@@ -289,7 +280,7 @@ with sync_playwright() as p:
                         break
             if not codigo:
                 print("   nao recebi o codigo a tempo. Nada foi enviado.")
-                pg.screenshot(path=os.path.join(BASE, "_tmp", f"gh-{chave}-esperando.png"), full_page=True)
+                pg.screenshot(path=tmp(f"gh-{chave}-esperando.png"), full_page=True)
                 ctx.close(); b.close(); raise SystemExit(3)
             print(f"   codigo recebido: {codigo}")
             # widget de OTP: preencher caixa a caixa nao registra no React. Focar a
@@ -318,7 +309,7 @@ with sync_playwright() as p:
                 pg.wait_for_timeout(1000)
             print("   botao habilitado:", not bt.is_disabled())
             if bt.is_disabled():
-                pg.screenshot(path=os.path.join(BASE, "_tmp", f"gh-{chave}-codigo.png"), full_page=True)
+                pg.screenshot(path=tmp(f"gh-{chave}-codigo.png"), full_page=True)
                 print("   codigo nao habilitou o envio. Screenshot salvo.")
                 ctx.close(); b.close(); raise SystemExit(4)
 
@@ -333,7 +324,7 @@ with sync_playwright() as p:
             if ok:
                 break
         print("   URL:", pg.url)
-        pg.screenshot(path=os.path.join(BASE, "_tmp", f"gh-{chave}-enviado.png"), full_page=True)
+        pg.screenshot(path=tmp(f"gh-{chave}-enviado.png"), full_page=True)
     else:
         print("\n[6] DRY-RUN: nada enviado.")
 

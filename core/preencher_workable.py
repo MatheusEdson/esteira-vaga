@@ -6,43 +6,12 @@ A janela fica aberta ate' voce fechar.
   python preencher_workable.py
 """
 import os, sys, re, time
-import io
-import sys as _sys, os as _os
-_d = _os.path.dirname(_os.path.abspath(__file__))
-for _c in (_d, _os.path.dirname(_d)):
-    if _c not in _sys.path: _sys.path.insert(0, _c)
-from nav import sync_playwright   # patchright endurecido, ver nav.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.bootstrap import PERFIL, ID, cv, bloco, tmp, sync_playwright
 
 ENVIAR = "--enviar" in sys.argv
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
-PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv
-
-def bloco(chave):
-    """Le uma resposta dissertativa de respostas/workable.md.
-
-    As respostas nao vivem no codigo porque carregam metrica de empregador e de cliente.
-    respostas/ e gitignored. Sem o arquivo, ABORTA em vez de enviar formulario vazio.
-    """
-    from core.perfil import respostas_md
-    caminho = respostas_md("workable.md")
-    if not os.path.exists(caminho):
-        raise SystemExit(
-            "ERRO: nao achei %s\n"
-            "Crie o arquivo com uma secao por resposta:\n"
-            "  ## NOME_DA_CHAVE\n  seu texto aqui\n"
-            "Ver docs/respostas-formato.md." % caminho)
-    txt = io.open(caminho, encoding="utf-8").read()
-    m = re.search(r"^##\s+" + re.escape(chave) + r"\s*$(.*?)(?=^##\s|\Z)",
-                  txt, re.M | re.S)
-    if not m or not m.group(1).strip():
-        raise SystemExit("ERRO: falta a secao '## %s' em %s" % (chave, caminho))
-    return m.group(1).strip()
-
-ID = PERFIL["identidade"]
-CV = _cv("web_seo")
+CV = cv("web_seo")
 SALARIO = str(PERFIL["respostas_padrao"].get("expected_salary_usd_month") or "")
 
 MULTI_LOCAL = bloco("MULTI_LOCAL")
@@ -96,7 +65,7 @@ MAPEAR = r"""() => [...document.querySelectorAll('input, textarea')]
 
 with sync_playwright() as p:
     ctx = p.chromium.launch_persistent_context(
-        os.path.join(BASE, "_tmp", "edge-profile-workable"), channel="msedge", headless=ENVIAR,
+        tmp("edge-profile-workable"), channel="msedge", headless=ENVIAR,
         viewport={"width": 1500, "height": 1000}, locale="en-US",
         )
 
@@ -234,7 +203,7 @@ with sync_playwright() as p:
                     break
             print("    URL:", pg.url)
             slug = re.sub(r"[^a-z0-9]+", "-", nome.lower())
-            pg.screenshot(path=os.path.join(BASE, "_tmp", f"wk-{slug}.png"), full_page=True)
+            pg.screenshot(path=tmp(f"wk-{slug}.png"), full_page=True)
 
     print("\n" + "=" * 76)
     if ENVIAR:

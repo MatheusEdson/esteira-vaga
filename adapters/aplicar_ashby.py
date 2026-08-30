@@ -5,17 +5,9 @@
 Aborta sem enviar se achar pergunta obrigatoria sem resposta preparada.
 """
 import sys, os, re
-import sys as _sys, os as _os
-_d = _os.path.dirname(_os.path.abspath(__file__))
-for _c in (_d, _os.path.dirname(_d)):
-    if _c not in _sys.path: _sys.path.insert(0, _c)
-from nav import sync_playwright   # patchright endurecido, ver nav.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.bootstrap import ID, cv, tmp, sync_playwright
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
-PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv, respostas_md as _resp
-ID = PERFIL["identidade"]
 
 if len(sys.argv) < 2:
     raise SystemExit(__doc__)
@@ -23,13 +15,13 @@ URL = sys.argv[1]
 DO_SUBMIT = "--submit" in sys.argv
 MD = sys.argv[sys.argv.index("--respostas") + 1] if "--respostas" in sys.argv else None
 trilha = sys.argv[sys.argv.index("--cv") + 1] if "--cv" in sys.argv else "web_seo"
-CV = _cv(trilha)
+CV = cv(trilha)
 print(f"[0] CV: {os.path.basename(CV)}")
 
 
 def secoes(md):
     """Le o .md e devolve {trecho_da_pergunta: resposta}."""
-    txt = open(_resp(md), encoding="utf-8").read()
+    txt = open(resposta(md), encoding="utf-8").read()
     out = {}
     for bloco in re.split(r"\n## ", txt)[1:]:
         cab, _, corpo = bloco.partition("\n")
@@ -150,7 +142,7 @@ with sync_playwright() as p:
         print("=" * 76)
         ctx.close(); b.close(); raise SystemExit(2)
 
-    pg.screenshot(path=os.path.join(BASE, "_tmp", "ashby-preenchido.png"), full_page=True)
+    pg.screenshot(path=tmp("ashby-preenchido.png"), full_page=True)
 
     if DO_SUBMIT:
         print("\n[6] ENVIANDO")
@@ -174,7 +166,7 @@ with sync_playwright() as p:
             if ok or spam:
                 break
         print("   URL final:", pg.url)
-        pg.screenshot(path=os.path.join(BASE, "_tmp", f"ashby-{slug}.png"), full_page=True)
+        pg.screenshot(path=tmp(f"ashby-{slug}.png"), full_page=True)
         print("   screenshot:", f"ashby-{slug}.png")
     else:
         print("\n[6] DRY-RUN: nada enviado.")

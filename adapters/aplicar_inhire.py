@@ -7,25 +7,10 @@ O formulario tem reCAPTCHA. Se o envio for barrado, o fallback e' abrir a janela
 visivel com tudo preenchido para o Matheus clicar (--janela).
 """
 import sys, os, re, time
-import sys as _sys, os as _os
-_d = _os.path.dirname(_os.path.abspath(__file__))
-for _c in (_d, _os.path.dirname(_d)):
-    if _c not in _sys.path: _sys.path.insert(0, _c)
-from nav import sync_playwright   # patchright endurecido, ver nav.py
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.bootstrap import PERFIL, ID, cv, tmp, sync_playwright
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-from core.perfil import perfil as _carregar_perfil   # le data/perfil.json
-PERFIL = _carregar_perfil()
-from core.perfil import curriculo as _cv
-ID = PERFIL["identidade"]
 
-def do_perfil(chave, secao="respostas_padrao"):
-    """Le do perfil e ABORTA se estiver vazio. Ver aplicar_contractorliberty.py."""
-    v = PERFIL.get(secao, {}).get(chave)
-    v = str(v).strip() if v is not None else ""
-    if not v:
-        raise SystemExit("ERRO: preencha %s.%s no data/perfil.json" % (secao, chave))
-    return v
 
 VAGAS = {
     "skyone": ("Skyone · Especialista Growth",
@@ -44,7 +29,7 @@ if len(sys.argv) < 2 or sys.argv[1] not in VAGAS:
     raise SystemExit(__doc__)
 chave = sys.argv[1]
 NOME, URL, CV_KEY = VAGAS[chave]
-CV = _cv(CV_KEY)
+CV = cv(CV_KEY)
 DO_SUBMIT = "--submit" in sys.argv
 JANELA = "--janela" in sys.argv
 
@@ -327,7 +312,7 @@ with sync_playwright() as p:
         print("   ", l)
 
     slug = chave
-    pg.screenshot(path=os.path.join(BASE, "_tmp", f"inhire-{slug}.png"), full_page=True)
+    pg.screenshot(path=tmp(f"inhire-{slug}.png"), full_page=True)
 
     if JANELA:
         print("\n" + "=" * 74)
@@ -364,7 +349,7 @@ with sync_playwright() as p:
             if ok:
                 break
         print("   URL:", pg.url)
-        pg.screenshot(path=os.path.join(BASE, "_tmp", f"inhire-{slug}-enviado.png"), full_page=True)
+        pg.screenshot(path=tmp(f"inhire-{slug}-enviado.png"), full_page=True)
     else:
         print("\n[5] DRY-RUN: nada enviado.")
 

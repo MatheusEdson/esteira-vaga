@@ -1,0 +1,9 @@
+# So' o que a IMAGEM precisa: a API e o Kanban.
+#
+# Existe separado porque o deploy/Dockerfile copia apenas app/ e core/, e instalar o
+# requirements.txt inteiro puxava patchright (que baixa um Chromium), psycopg2 e o cliente
+# completo da API do Google para dentro de um container que nao abre navegador, nao fala
+# com Postgres e nao le Gmail.
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
